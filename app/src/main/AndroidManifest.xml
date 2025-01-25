@@ -2,6 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- says our app absolutely requires camera-->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+    <!-- permission to access camera -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- these are optional, I added because we might need to store some stuff during development -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
