@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "algonquin.cst2335.enigmaticocrapp"
+    namespace = "algonquin.cst8319.enigmatic"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "algonquin.cst2335.enigmaticocrapp"
+        applicationId = "algonquin.cst8319.enigmatic"
         minSdk = 30
         targetSdk = 34
         versionCode = 1

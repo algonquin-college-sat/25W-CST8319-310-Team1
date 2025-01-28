@@ -1,9 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.ENIGMaticOCRapp" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.enigmatic_ocr" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>
 
-    <style name="Theme.ENIGMaticOCRapp" parent="Base.Theme.ENIGMaticOCRapp" />
+    <style name="Theme.enigmatic_ocr" parent="Base.Theme.enigmatic_ocr" />
 </resources>
