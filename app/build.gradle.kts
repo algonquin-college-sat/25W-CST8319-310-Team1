@@ -7,6 +7,9 @@ android {
     namespace = "algonquin.cst8319.enigmatic"
     compileSdk = 34
 
+    buildFeatures {
+        viewBinding = true
+    }
     defaultConfig {
         applicationId = "algonquin.cst8319.enigmatic"
         minSdk = 30
