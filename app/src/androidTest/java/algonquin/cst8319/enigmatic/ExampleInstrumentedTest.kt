@@ -1,4 +1,4 @@
-package algonquin.cst2335.enigmaticocrapp
+package algonquin.cst8319.enigmatic
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
