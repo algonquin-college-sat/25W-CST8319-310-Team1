@@ -1,5 +1,7 @@
 package algonquin.cst8319.enigmatic
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class LabelJSON(
     private var productType : String,
     private var toAddress : String,
