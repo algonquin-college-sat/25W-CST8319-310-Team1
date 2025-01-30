@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -14,7 +16,7 @@ import androidx.lifecycle.LifecycleOwner
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class MainActivity : AppCompatActivity() {
+@ExperimentalGetImage class MainActivity : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,13 +52,25 @@ class MainActivity : AppCompatActivity() {
             val preview = Preview.Builder().build().also {
                 val previewView = findViewById<PreviewView>(R.id.previewView)
                 it.setSurfaceProvider(previewView.surfaceProvider)
+
+
+
+
+
             }
 
             try {
                 // Bind the camera to the lifecycle
+
+
+
+
                 cameraProvider.unbindAll()
+                // these two lines of code were added to main
+                val imageAnalyzer = ImageAnalyzer()
+                val imageAnalysis = imageAnalyzer.createImageAnalysis(cameraExecutor)
                 cameraProvider.bindToLifecycle(
-                    this as LifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview
+                    this as LifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalysis
                 )
             } catch (e: Exception) {
                 Log.d("ERROR", e.message.toString())
