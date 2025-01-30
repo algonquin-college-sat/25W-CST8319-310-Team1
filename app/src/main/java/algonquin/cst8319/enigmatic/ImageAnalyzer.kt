@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService
             .build().apply {
                 setAnalyzer(cameraExecutor) { imageProxy ->
                     analyze(imageProxy) // Send the frame to ML Kit
+                    imageProxy.close()
                 }
             }
         return imageAnalyzer
