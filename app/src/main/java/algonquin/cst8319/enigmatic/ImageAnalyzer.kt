@@ -1,5 +1,6 @@
 package algonquin.cst8319.enigmatic
 
+import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
 import android.util.Log
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -11,7 +12,7 @@ import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.ExecutorService
 
-@ExperimentalGetImage class ImageAnalyzer : ImageAnalysis.Analyzer {
+@ExperimentalGetImage class ImageAnalyzer(private var bindingMain: ActivityMainBinding) : ImageAnalysis.Analyzer {
     // ML Kit's TextRecognizer instance, used for detecting text in images
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
@@ -90,6 +91,13 @@ import java.util.concurrent.ExecutorService
                 }
 
                 Log.d("OCR", "recognizedText: $recognizedTextBlocks")
+
+                // outputting text blocks into UI textview, each on a new line
+                bindingMain.textView.text = ""
+                for (block in recognizedTextBlocks) {
+                    bindingMain.textView.append(block)
+                    bindingMain.textView.append("\n")
+                }
 
                 // 2-second pause between each successful text recognition
                 Thread.sleep(2000)
