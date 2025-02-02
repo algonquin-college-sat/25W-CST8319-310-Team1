@@ -1,5 +1,6 @@
 package algonquin.cst8319.enigmatic
 
+import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -18,9 +19,13 @@ import java.util.concurrent.Executors
 
 @ExperimentalGetImage class MainActivity : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
+
+    private lateinit var binding : ActivityMainBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // Initialize the camera executor
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -50,25 +55,18 @@ import java.util.concurrent.Executors
 
             // Set up the Preview use case
             val preview = Preview.Builder().build().also {
-                val previewView = findViewById<PreviewView>(R.id.previewView)
+                val previewView = binding.previewView
                 it.setSurfaceProvider(previewView.surfaceProvider)
-
-
-
-
-
             }
 
             try {
                 // Bind the camera to the lifecycle
-
-
-
-
                 cameraProvider.unbindAll()
+
                 // these two lines of code were added to main
-                val imageAnalyzer = ImageAnalyzer()
+                val imageAnalyzer = ImageAnalyzer(binding)
                 val imageAnalysis = imageAnalyzer.createImageAnalysis(cameraExecutor)
+
                 cameraProvider.bindToLifecycle(
                     this as LifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalysis
                 )
