@@ -14,6 +14,10 @@ import java.util.concurrent.ExecutorService
 @ExperimentalGetImage class ImageAnalyzer : ImageAnalysis.Analyzer {
     // ML Kit's TextRecognizer instance, used for detecting text in images
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+    // data structure to store recognized text blocks
+    private val recognizedTextBlocks = mutableListOf<String>()
+
     /**
      * Creates an ImageAnalysis use case with the desired settings and analyzer.
      * @param cameraExecutor The executor used to process image frames in the background.
@@ -45,8 +49,9 @@ import java.util.concurrent.ExecutorService
     /**
      * Uses ML Kit's TextRecognizer to detect and process text from the given InputImage.
      * @param image The InputImage to process for text detection.
+     * @return list of recognized text blocks
      */
-    private fun recognizeText(image: InputImage) {
+    private fun recognizeText(image: InputImage): MutableList<String> {
 
 
         this.recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -54,26 +59,47 @@ import java.util.concurrent.ExecutorService
         val result = recognizer.process(image)
             .addOnSuccessListener { visionText ->
 
+                Log.d("OCR", "Full detected text: ${visionText.text}")
+
+                // clear list of text blocks from previous image
+                recognizedTextBlocks.clear()
 
                 for (block in visionText.textBlocks) {
                     val boundingBox = block.boundingBox
                     val cornerPoints = block.cornerPoints
                     val text = block.text
-                    Log.d("OCR", "Full detected text: ${visionText.text}")
+
+                    // re-enable logging of each block if necessary
+                    // Log.d("OCR", "Full detected text: ${block.text}")
+
+                    // add new text blocks to list
+                    if (text !in recognizedTextBlocks)
+                        recognizedTextBlocks.add(text)
 
                     for (line in block.lines) {
 
+                        // re-enable logging of each line if necessary
+                        // Log.d("OCR", "Line text: ${line.text}")
+
                         for (element in line.elements) {
 
-                            Log.d("OCR", "Line text: ${line.text}")
+                            // re-enable logging of each line element if necessary
+                            // Log.d("OCR", "Element text: ${element.text}")
                         }
                     }
                 }
+
+                Log.d("OCR", "recognizedText: $recognizedTextBlocks")
+
+                // 2-second pause between each successful text recognition
+                Thread.sleep(2000)
 
             }
             .addOnFailureListener { e ->
 
             }
+
+        return recognizedTextBlocks
 
     }
     /**
