@@ -11,6 +11,10 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.ExecutorService
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.common.Barcode
+
 
 @ExperimentalGetImage class ImageAnalyzer(private var bindingMain: ActivityMainBinding) : ImageAnalysis.Analyzer {
     // ML Kit's TextRecognizer instance, used for detecting text in images
@@ -18,6 +22,12 @@ import java.util.concurrent.ExecutorService
 
     // data structure to store recognized text blocks
     private val recognizedTextBlocks = mutableListOf<String>()
+
+    //BarcodeScanner instance
+    private val options = BarcodeScannerOptions.Builder()
+        .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
+        .build()
+    private val barcodeScanner = BarcodeScanning.getClient(options)
 
     /**
      * Creates an ImageAnalysis use case with the desired settings and analyzer.
@@ -45,6 +55,7 @@ import java.util.concurrent.ExecutorService
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
 
             recognizeText(image)
+            processBarcode(image)
         }
     }
     /**
@@ -90,15 +101,6 @@ import java.util.concurrent.ExecutorService
                     }
                 }
 
-                Log.d("OCR", "recognizedText: $recognizedTextBlocks")
-
-                // outputting text blocks into UI textview, each on a new line
-                bindingMain.textView.text = ""
-                for (block in recognizedTextBlocks) {
-                    bindingMain.textView.append(block)
-                    bindingMain.textView.append("\n")
-                }
-
                 // 2-second pause between each successful text recognition
                 Thread.sleep(2000)
 
@@ -110,6 +112,54 @@ import java.util.concurrent.ExecutorService
         return recognizedTextBlocks
 
     }
+
+    /**
+     * Checks if the recognized text contains characteristics of a barcode.
+     * For example, we look for a long numeric sequence.
+     */
+
+    /**
+     * Processes barcode scanning on the given InputImage.
+     * This method is called only when isBarcodeExpected() returns true.
+     */
+    private var isBarcodeProcessing = false
+    private fun processBarcode(image: InputImage) {
+        if (isBarcodeProcessing) {
+            Log.d("Barcode", "Barcode processing already in progress; skipping this frame.")
+            return
+        }
+        isBarcodeProcessing = true
+        barcodeScanner.process(image)
+            .addOnSuccessListener { barcodes ->
+                if (barcodes.isNotEmpty()) {
+                    for (barcode in barcodes) {
+                        var barcodeValue = barcode.displayValue ?: ""
+                        Log.d("Barcode", "Detected barcode: $barcodeValue")
+                        // Append the barcode value to the recognized test list
+
+                        recognizedTextBlocks.add("Barcode: $barcodeValue")
+                        Log.d("OCR", "recognizedText: $recognizedTextBlocks")
+                    }
+
+                    // outputting text blocks into UI textview, each on a new line
+                    bindingMain.textView.text = ""
+                    for (block in recognizedTextBlocks) {
+                        bindingMain.textView.append(block)
+                        bindingMain.textView.append("\n")
+                    }
+                } else {
+                    Log.d("Barcode", "No barcode detected in this frame.")
+                }
+            }
+            .addOnFailureListener { e ->
+                //Log.e("Barcode", "Barcode scanning failed2: ${e.localizedMessage}", e)
+            }
+            .addOnCompleteListener {
+                // Reset flag so next frame can trigger barcode scanning
+                isBarcodeProcessing = false
+            }
+    }
+
     /**
      * A helper method to process detected text blocks, lines, and elements for further use.
      * @param result The recognized text result from ML Kit.
