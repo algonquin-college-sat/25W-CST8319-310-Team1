@@ -20,8 +20,13 @@ import com.google.mlkit.vision.barcode.common.Barcode
     // ML Kit's TextRecognizer instance, used for detecting text in images
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-    // data structure to store recognized text blocks
+    // Processing flags
+    private var isTextProcessingComplete = false
+    private var isBarcodeProcessingComplete = false
+
+    // data structures to store recognized text blocks and barcode value
     private val recognizedTextBlocks = mutableListOf<String>()
+    private var barcodeValue = ""
 
     //BarcodeScanner instance
     private val options = BarcodeScannerOptions.Builder()
@@ -56,6 +61,7 @@ import com.google.mlkit.vision.barcode.common.Barcode
 
             recognizeText(image)
             processBarcode(image)
+            outputToUI()
         }
     }
     /**
@@ -64,8 +70,6 @@ import com.google.mlkit.vision.barcode.common.Barcode
      * @return list of recognized text blocks
      */
     private fun recognizeText(image: InputImage): MutableList<String> {
-
-
         this.recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
         val result = recognizer.process(image)
@@ -108,15 +112,14 @@ import com.google.mlkit.vision.barcode.common.Barcode
             .addOnFailureListener { e ->
 
             }
+            .addOnCompleteListener {
+                // Mark text processing as complete
+                isTextProcessingComplete = true
+            }
 
         return recognizedTextBlocks
 
     }
-
-    /**
-     * Checks if the recognized text contains characteristics of a barcode.
-     * For example, we look for a long numeric sequence.
-     */
 
     /**
      * Processes barcode scanning on the given InputImage.
@@ -133,19 +136,11 @@ import com.google.mlkit.vision.barcode.common.Barcode
             .addOnSuccessListener { barcodes ->
                 if (barcodes.isNotEmpty()) {
                     for (barcode in barcodes) {
-                        var barcodeValue = barcode.displayValue ?: ""
+                        barcodeValue = barcode.displayValue ?: ""
                         Log.d("Barcode", "Detected barcode: $barcodeValue")
-                        // Append the barcode value to the recognized test list
 
-                        recognizedTextBlocks.add("Barcode: $barcodeValue")
-                        Log.d("OCR", "recognizedText: $recognizedTextBlocks")
-                    }
-
-                    // outputting text blocks into UI textview, each on a new line
-                    bindingMain.textView.text = ""
-                    for (block in recognizedTextBlocks) {
-                        bindingMain.textView.append(block)
-                        bindingMain.textView.append("\n")
+//                        recognizedTextBlocks.add("Barcode: $barcodeValue")
+//                        Log.d("OCR", "recognizedText: $recognizedTextBlocks")
                     }
                 } else {
                     Log.d("Barcode", "No barcode detected in this frame.")
@@ -157,7 +152,31 @@ import com.google.mlkit.vision.barcode.common.Barcode
             .addOnCompleteListener {
                 // Reset flag so next frame can trigger barcode scanning
                 isBarcodeProcessing = false
+
+                // Mark barcode processing as complete
+                isBarcodeProcessingComplete = true
             }
+    }
+
+    /**
+     * Updates the UI with the recognized text and barcode value.
+     * This method ensures that UI updates are performed on the main thread
+     * by using the `post` method of the root view. It first clears any previous
+     * content in the `textView`, then appends each recognized text block followed
+     * by the barcode value if both text and barcode processing are complete.
+     */
+    private fun outputToUI() {
+        // Ensure that UI updates run on the main thread
+        bindingMain.root.post {
+            bindingMain.textView.text = ""
+            if (isTextProcessingComplete && isBarcodeProcessingComplete) {
+                for (block in recognizedTextBlocks) {
+                    bindingMain.textView.append(block)
+                    bindingMain.textView.append("\n")
+                }
+                bindingMain.textView.append("Barcode: $barcodeValue")
+            }
+        }
     }
 
     /**
