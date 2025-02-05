@@ -2,9 +2,11 @@ package algonquin.cst8319.enigmatic
 
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
 import android.util.Log
+import android.view.ViewGroup
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import com.google.android.material.snackbar.Snackbar
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
@@ -34,6 +36,8 @@ import com.google.mlkit.vision.barcode.common.Barcode
         .build()
     private val barcodeScanner = BarcodeScanning.getClient(options)
 
+    private var isSnackbarVisible = false
+
     /**
      * Creates an ImageAnalysis use case with the desired settings and analyzer.
      * @param cameraExecutor The executor used to process image frames in the background.
@@ -61,9 +65,14 @@ import com.google.mlkit.vision.barcode.common.Barcode
 
             recognizeText(image)
             processBarcode(image)
-            outputToUI()
+            // outputToUI()
+
+            if (getOutput() != "" && !isSnackbarVisible) {
+                    outputToSnackbar(getOutput())
+            }
         }
     }
+
     /**
      * Uses ML Kit's TextRecognizer to detect and process text from the given InputImage.
      * @param image The InputImage to process for text detection.
@@ -177,6 +186,37 @@ import com.google.mlkit.vision.barcode.common.Barcode
                 bindingMain.textView.append("Barcode: $barcodeValue")
             }
         }
+    }
+
+    /**
+     * Get extracted text and barcode and return as a String.
+     */
+    private fun getOutput(): String {
+        var output = ""
+        if (isTextProcessingComplete && isBarcodeProcessingComplete) {
+            for (block in recognizedTextBlocks) {
+                output += block
+                output += "\n"
+            }
+            output += "Barcode: $barcodeValue"
+        }
+        return output
+    }
+
+    /**
+     * Displays extracted text and barcode to Snackbar.
+     * Snackbar is dismissed when it's dismiss action is clicked.
+     */
+    private fun outputToSnackbar(extract: String) {
+        isSnackbarVisible = true
+
+        var snackbar = Snackbar.make(bindingMain.root, extract, Snackbar.LENGTH_INDEFINITE)
+        snackbar.setAction("DISMISS") {
+            snackbar.dismiss()
+            isSnackbarVisible = false
+        }
+        snackbar.setTextMaxLines(30)
+        snackbar.show()
     }
 
     /**
