@@ -2,29 +2,31 @@ package algonquin.cst8319.enigmatic
 
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
 import android.util.Log
-import android.view.ViewGroup
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.android.material.snackbar.Snackbar
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.ExecutorService
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.common.Barcode
 
 
 @ExperimentalGetImage class ImageAnalyzer(private var bindingMain: ActivityMainBinding) : ImageAnalysis.Analyzer {
     // ML Kit's TextRecognizer instance, used for detecting text in images
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-    // Processing flags
+    // Status flags
     private var isTextProcessingComplete = false
     private var isBarcodeProcessingComplete = false
+    private var isBarcodeProcessing = false
+    private var isSnackbarVisible = false
+
 
     // data structures to store recognized text blocks and barcode value
     private val recognizedTextBlocks = mutableListOf<String>()
@@ -36,20 +38,19 @@ import com.google.mlkit.vision.barcode.common.Barcode
         .build()
     private val barcodeScanner = BarcodeScanning.getClient(options)
 
-    private var isSnackbarVisible = false
-
     /**
      * Creates an ImageAnalysis use case with the desired settings and analyzer.
      * @param cameraExecutor The executor used to process image frames in the background.
      * @return The configured ImageAnalysis use case.
      */
     fun createImageAnalysis(cameraExecutor: ExecutorService): ImageAnalysis {
-        var imageAnalyzer = ImageAnalysis.Builder()
+        val imageAnalyzer = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) // Keeps only the latest frame
             .build().apply {
                 setAnalyzer(cameraExecutor) { imageProxy ->
                     analyze(imageProxy) // Send the frame to ML Kit
-                    imageProxy.close()
+                    // the closing of the image proxy was moved to the analyze() function below
+                    // imageProxy.close()
                 }
             }
         return imageAnalyzer
@@ -65,11 +66,18 @@ import com.google.mlkit.vision.barcode.common.Barcode
 
             recognizeText(image)
             processBarcode(image)
+
+            // output to TextView now called from within the snackbar dismiss code block
             // outputToUI()
 
-            if (getOutput() != "" && !isSnackbarVisible) {
+            if (recognizedTextBlocks.isNotEmpty() || barcodeValue.isNotEmpty() && !isSnackbarVisible) {
                     outputToSnackbar(getOutput())
             }
+
+            // loop to suspend the image analyzer until the snackbar is dismissed
+            while (isSnackbarVisible)
+                Thread.sleep(1000)
+            imageProxy.close()
         }
     }
 
@@ -83,6 +91,8 @@ import com.google.mlkit.vision.barcode.common.Barcode
 
         val result = recognizer.process(image)
             .addOnSuccessListener { visionText ->
+
+                isTextProcessingComplete = false
 
                 Log.d("OCR", "Full detected text: ${visionText.text}")
 
@@ -113,10 +123,6 @@ import com.google.mlkit.vision.barcode.common.Barcode
                         }
                     }
                 }
-
-                // 2-second pause between each successful text recognition
-                Thread.sleep(2000)
-
             }
             .addOnFailureListener { e ->
 
@@ -124,6 +130,9 @@ import com.google.mlkit.vision.barcode.common.Barcode
             .addOnCompleteListener {
                 // Mark text processing as complete
                 isTextProcessingComplete = true
+
+                Log.d("OCR", "recognizedText: $recognizedTextBlocks")
+
             }
 
         return recognizedTextBlocks
@@ -132,9 +141,7 @@ import com.google.mlkit.vision.barcode.common.Barcode
 
     /**
      * Processes barcode scanning on the given InputImage.
-     * This method is called only when isBarcodeExpected() returns true.
      */
-    private var isBarcodeProcessing = false
     private fun processBarcode(image: InputImage) {
         if (isBarcodeProcessing) {
             Log.d("Barcode", "Barcode processing already in progress; skipping this frame.")
@@ -143,20 +150,19 @@ import com.google.mlkit.vision.barcode.common.Barcode
         isBarcodeProcessing = true
         barcodeScanner.process(image)
             .addOnSuccessListener { barcodes ->
+                barcodeValue = ""
                 if (barcodes.isNotEmpty()) {
                     for (barcode in barcodes) {
                         barcodeValue = barcode.displayValue ?: ""
                         Log.d("Barcode", "Detected barcode: $barcodeValue")
 
-//                        recognizedTextBlocks.add("Barcode: $barcodeValue")
-//                        Log.d("OCR", "recognizedText: $recognizedTextBlocks")
                     }
                 } else {
                     Log.d("Barcode", "No barcode detected in this frame.")
                 }
             }
             .addOnFailureListener { e ->
-                //Log.e("Barcode", "Barcode scanning failed2: ${e.localizedMessage}", e)
+                Log.e("Barcode", "Barcode scanning failed: ${e.localizedMessage}", e)
             }
             .addOnCompleteListener {
                 // Reset flag so next frame can trigger barcode scanning
@@ -213,9 +219,10 @@ import com.google.mlkit.vision.barcode.common.Barcode
         var snackbar = Snackbar.make(bindingMain.root, extract, Snackbar.LENGTH_INDEFINITE)
         snackbar.setAction("DISMISS") {
             snackbar.dismiss()
+            outputToUI()
             isSnackbarVisible = false
         }
-        snackbar.setTextMaxLines(30)
+        snackbar.setTextMaxLines(50)
         snackbar.show()
     }
 

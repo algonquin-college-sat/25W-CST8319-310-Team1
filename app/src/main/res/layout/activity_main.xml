@@ -46,7 +46,8 @@
         </ScrollView>
     </LinearLayout>
 
-    <!-- Capture Button -->
+    <!-- Capture Button - removed for now -->
+    <!--
     <Button
         android:id="@+id/captureButton"
         android:layout_width="wrap_content"
@@ -55,5 +56,6 @@
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="16dp"/>
+    -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>
