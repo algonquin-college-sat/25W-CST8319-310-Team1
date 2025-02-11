@@ -70,9 +70,11 @@ import java.util.concurrent.ExecutorService
             // output to TextView now called from within the snackbar dismiss code block
             // outputToUI()
 
-            if (recognizedTextBlocks.isNotEmpty() || barcodeValue.isNotEmpty() && !isSnackbarVisible) {
+//            if (isTextProcessingComplete && isBarcodeProcessingComplete) {
+                if (recognizedTextBlocks.isNotEmpty() && barcodeValue.isNotEmpty() && !isSnackbarVisible) {
                     outputToSnackbar(getOutput())
-            }
+                }
+//            }
 
             // loop to suspend the image analyzer until the snackbar is dismissed
             while (isSnackbarVisible)
@@ -125,7 +127,7 @@ import java.util.concurrent.ExecutorService
                 }
             }
             .addOnFailureListener { e ->
-
+                Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
             }
             .addOnCompleteListener {
                 // Mark text processing as complete
@@ -200,11 +202,18 @@ import java.util.concurrent.ExecutorService
     private fun getOutput(): String {
         var output = ""
         if (isTextProcessingComplete && isBarcodeProcessingComplete) {
-            for (block in recognizedTextBlocks) {
-                output += block
-                output += "\n"
+            if (barcodeValue.isEmpty()) {
+                output += "No valid barcode detected\n"
+            } else {
+                output += "Barcode: $barcodeValue \n"
             }
-            output += "Barcode: $barcodeValue"
+            if (recognizedTextBlocks.isEmpty()) {
+                output += "No valid text recognized\n"
+            } else {
+                for (block in recognizedTextBlocks) {
+                    output += block + "\n"
+                }
+            }
         }
         return output
     }
@@ -216,10 +225,11 @@ import java.util.concurrent.ExecutorService
     private fun outputToSnackbar(extract: String) {
         isSnackbarVisible = true
 
-        var snackbar = Snackbar.make(bindingMain.root, extract, Snackbar.LENGTH_INDEFINITE)
+        val snackbar = Snackbar.make(bindingMain.root, extract, Snackbar.LENGTH_INDEFINITE)
         snackbar.setAction("DISMISS") {
+
             snackbar.dismiss()
-            outputToUI()
+            bindingMain.textView.text = extract
             isSnackbarVisible = false
         }
         snackbar.setTextMaxLines(50)

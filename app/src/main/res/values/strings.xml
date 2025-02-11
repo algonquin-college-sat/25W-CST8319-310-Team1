@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">enigmatic_ocr</string>
-    <string name="display_text">Test</string>
+    <string name="display_text">Nothing scanned yet ...</string>
 </resources>
