@@ -63,7 +63,7 @@ import java.util.concurrent.Executors
                 // Bind the camera to the lifecycle
                 cameraProvider.unbindAll()
 
-                // these two lines of code were added to main
+                // instantiate the ImageAnalyzer and bind it to the cameraProvider
                 val imageAnalyzer = ImageAnalyzer(binding)
                 val imageAnalysis = imageAnalyzer.createImageAnalysis(cameraExecutor)
 
