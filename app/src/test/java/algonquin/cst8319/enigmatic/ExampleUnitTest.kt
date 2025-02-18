@@ -1,4 +1,4 @@
-package algonquin.cst2335.enigmaticocrapp
+package algonquin.cst8319.enigmatic
 
 import org.junit.Test
 

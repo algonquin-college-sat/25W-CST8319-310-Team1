@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ENIGMaticOCRapp"
+rootProject.name = "enigmatic_ocr"
 include(":app")
