@@ -1,6 +1,7 @@
 package algonquin.cst8319.enigmatic
 
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
+import android.graphics.Rect
 import android.util.Log
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -90,7 +91,10 @@ import java.util.concurrent.ExecutorService
      */
     private fun recognizeText(image: InputImage): MutableList<String> {
         this.recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-
+        val fromAddressRegion = Rect(100, 470, 220, 515)
+        val toAddressRegion = Rect(81, 205, 185, 266)
+        val tracking = Rect(202, 388, 302, 483)
+        val postalCodeRegion = Rect(87, 294, 190, 341)
         val result = recognizer.process(image)
             .addOnSuccessListener { visionText ->
 
@@ -113,15 +117,27 @@ import java.util.concurrent.ExecutorService
                     if (text !in recognizedTextBlocks)
                         recognizedTextBlocks.add(text)
 
-                    for (line in block.lines) {
+                    for (block in visionText.textBlocks) {
+                        val bound = block.boundingBox
+                        if (bound != null) {
+                            Log.d("OCR_DEBUG", "Detected Text: '${block.text}' at Bounding Box: $bound")
 
-                        // re-enable logging of each line if necessary
-                        // Log.d("OCR", "Line text: ${line.text}")
+                            when {
+                                fromAddressRegion.contains(bound) ->
+                                    Log.d("OCR_DEBUG", "✅ 'From' Address detected: ${block.text}, Bounding Box: $bound, Expected Region: $fromAddressRegion")
 
-                        for (element in line.elements) {
+                                toAddressRegion.contains(bound) ->
+                                    Log.d("OCR_DEBUG", "✅ 'To' Address detected: ${block.text}, Bounding Box: $bound, Expected Region: $toAddressRegion")
 
-                            // re-enable logging of each line element if necessary
-                            // Log.d("OCR", "Element text: ${element.text}")
+                                tracking.contains(bound) ->
+                                    Log.d("OCR_DEBUG", "✅ Tracking Number detected: ${block.text}, Bounding Box: $bound, Expected Region: $tracking")
+
+                                postalCodeRegion.contains(bound) ->
+                                    Log.d("OCR_DEBUG", "✅ Postal Code detected: ${block.text}, Bounding Box: $bound, Expected Region: $postalCodeRegion")
+
+                                else ->
+                                    Log.d("OCR_DEBUG", "❌ Text outside defined regions: ${block.text}, Bounding Box: $bound")
+                            }
                         }
                     }
                 }
