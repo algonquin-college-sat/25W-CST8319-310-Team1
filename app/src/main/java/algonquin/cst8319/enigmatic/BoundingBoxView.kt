@@ -9,29 +9,27 @@ import android.util.AttributeSet
 import android.view.View
 
 class BoundingBoxView @JvmOverloads constructor(
-
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
     private val boundingBoxes = mutableListOf<RectF>()
+    private val paint = Paint().apply {
+        color = Color.RED
+        style = Paint.Style.STROKE
+        strokeWidth = 4f
+    }
 
     fun setBoundingBoxes(boxes: List<RectF>) {
         boundingBoxes.clear()
         boundingBoxes.addAll(boxes)
-        invalidate()  // Redraw the view
+        invalidate()  // Trigger redraw
+    }
 
-}
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val paint = Paint()
-        paint.color = Color.RED
-        paint.strokeWidth = 4f
-        paint.style = Paint.Style.STROKE
-
-        for (box in boundingBoxes) {
+        boundingBoxes.forEach { box ->
             canvas.drawRect(box, paint)
         }
     }
-
 }

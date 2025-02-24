@@ -29,8 +29,6 @@ class ImagePreprocessor {
             return InputImage.fromBitmap(processedBitmap, 0)
         } catch (e: Exception) {
             throw IllegalStateException("Error processing image: ${e.message}")
-        }finally {
-            bitmap?.recycle()
         }
     }
 
@@ -62,9 +60,7 @@ class ImagePreprocessor {
             GrayU8::class.java,
             GrayS16::class.java
         )
-        // Try adjusting these values
-        canny.process(grayImage, 0.1f, 0.3f, edgeImage) // Lower thresholds
-
+        canny.process(grayImage, 0.1f, 0.3f, edgeImage)
 
         return edgeImage
     }
