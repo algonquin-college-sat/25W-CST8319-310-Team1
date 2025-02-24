@@ -59,4 +59,8 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
+    // Add BoofCV dependencies
+    implementation ("org.boofcv:boofcv-android:0.40")
+    implementation ("org.boofcv:boofcv-core:0.40")
+
 }

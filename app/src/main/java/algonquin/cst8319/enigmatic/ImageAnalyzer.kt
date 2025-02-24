@@ -2,6 +2,7 @@ package algonquin.cst8319.enigmatic
 
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
 import android.graphics.Rect
+import android.graphics.RectF
 import android.util.Log
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -19,9 +20,12 @@ import java.util.concurrent.ExecutorService
 
 
 @ExperimentalGetImage class ImageAnalyzer(private var bindingMain: ActivityMainBinding) : ImageAnalysis.Analyzer {
+
+    private val imagePreprocessor = ImagePreprocessor()
     // ML Kit's TextRecognizer instance, used for detecting text in images
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
+    private var visionText: Text? = null
     // Status flags
     private var isTextProcessingComplete = false
     private var isBarcodeProcessingComplete = false
@@ -65,23 +69,76 @@ import java.util.concurrent.ExecutorService
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
 
-            recognizeText(image)
-            processBarcode(image)
+//            recognizeText(image)
+//            processBarcode(image)
 
-            // output to TextView now called from within the snackbar dismiss code block
-            // outputToUI()
+                // Apply edge detection preprocessing
+                val processedImage = imagePreprocessor.processImage(image)
+
+                try {                // Use processed image for text and barcode recognition
+                    recognizeText(processedImage)
+                    processBarcode(processedImage)
+
+                    // Get the bounding boxes after recognition
+                    val textBoundingBoxes =
+                        getTextBoundingBoxes()  // Add method to get text bounding boxes
+                    val barcodeBoundingBoxes =
+                        getBarcodeBoundingBoxes()  // Add method to get barcode bounding boxes
+
+                    // Combine both text and barcode bounding boxes
+                    val allBoundingBoxes = mutableListOf<RectF>().apply {
+                        addAll(textBoundingBoxes)
+                        addAll(barcodeBoundingBoxes)
+                    }
+
+                    // Pass bounding boxes to BoundingBoxView
+                    bindingMain.boundingBoxView.setBoundingBoxes(allBoundingBoxes)
+
+
+                    // output to TextView now called from within the snackbar dismiss code block
+                    // outputToUI()
 
 //            if (isTextProcessingComplete && isBarcodeProcessingComplete) {
-                if (recognizedTextBlocks.isNotEmpty() && barcodeValue.isNotEmpty() && !isSnackbarVisible) {
-                    outputToSnackbar(getOutput())
-                }
+                    if (recognizedTextBlocks.isNotEmpty() && barcodeValue.isNotEmpty() && !isSnackbarVisible) {
+                        outputToSnackbar(getOutput())
+                    }
 //            }
 
-            // loop to suspend the image analyzer until the snackbar is dismissed
-            while (isSnackbarVisible)
-                Thread.sleep(1000)
-            imageProxy.close()
+                    // loop to suspend the image analyzer until the snackbar is dismissed
+                    while (isSnackbarVisible)
+                        Thread.sleep(1000)
+                    imageProxy.close()
+                }catch (e: Exception) {
+                    Log.e("Camera", "Error processing image: ${e.message}")
+                }
         }
+    }
+
+    // Method to extract bounding boxes for recognized text
+    private fun getTextBoundingBoxes(): List<RectF> {
+        val boxes = mutableListOf<RectF>()
+        visionText?.textBlocks?.forEach { block ->  // Use safe call
+            block.boundingBox?.let { boundingBox ->
+                boxes.add(RectF(boundingBox))
+            }
+        }
+        return boxes
+    }
+
+
+
+    // Method to extract bounding boxes for recognized barcodes
+    private var barcodes = listOf<Barcode>()  // Add this property
+
+    private fun getBarcodeBoundingBoxes(): List<RectF> {
+        val boxes = mutableListOf<RectF>()
+        for (barcode in barcodes) {
+            val boundingBox = barcode.boundingBox
+            if (boundingBox != null) {
+                boxes.add(RectF(boundingBox))
+            }
+        }
+        return boxes
     }
 
     /**
@@ -95,49 +152,37 @@ import java.util.concurrent.ExecutorService
         val toAddressRegion = Rect(81, 205, 185, 266)
         val tracking = Rect(202, 388, 302, 483)
         val postalCodeRegion = Rect(87, 294, 190, 341)
-        val result = recognizer.process(image)
+
+        // Clear list before processing
+        recognizedTextBlocks.clear()
+        isTextProcessingComplete = false
+
+        recognizer.process(image)
             .addOnSuccessListener { visionText ->
-
-                isTextProcessingComplete = false
-
                 Log.d("OCR", "Full detected text: ${visionText.text}")
-
-                // clear list of text blocks from previous image
-                recognizedTextBlocks.clear()
 
                 for (block in visionText.textBlocks) {
                     val boundingBox = block.boundingBox
-                    val cornerPoints = block.cornerPoints
                     val text = block.text
 
-                    // re-enable logging of each block if necessary
-                    // Log.d("OCR", "Full detected text: ${block.text}")
-
-                    // add new text blocks to list
-                    if (text !in recognizedTextBlocks)
+                    if (text !in recognizedTextBlocks) {
                         recognizedTextBlocks.add(text)
+                    }
 
-                    for (block in visionText.textBlocks) {
-                        val bound = block.boundingBox
-                        if (bound != null) {
-                            Log.d("OCR_DEBUG", "Detected Text: '${block.text}' at Bounding Box: $bound")
+                    if (boundingBox != null) {
+                        Log.d("OCR_DEBUG", "Detected Text: '${text}' at Bounding Box: $boundingBox")
 
-                            when {
-                                fromAddressRegion.contains(bound) ->
-                                    Log.d("OCR_DEBUG", "✅ 'From' Address detected: ${block.text}, Bounding Box: $bound, Expected Region: $fromAddressRegion")
-
-                                toAddressRegion.contains(bound) ->
-                                    Log.d("OCR_DEBUG", "✅ 'To' Address detected: ${block.text}, Bounding Box: $bound, Expected Region: $toAddressRegion")
-
-                                tracking.contains(bound) ->
-                                    Log.d("OCR_DEBUG", "✅ Tracking Number detected: ${block.text}, Bounding Box: $bound, Expected Region: $tracking")
-
-                                postalCodeRegion.contains(bound) ->
-                                    Log.d("OCR_DEBUG", "✅ Postal Code detected: ${block.text}, Bounding Box: $bound, Expected Region: $postalCodeRegion")
-
-                                else ->
-                                    Log.d("OCR_DEBUG", "❌ Text outside defined regions: ${block.text}, Bounding Box: $bound")
-                            }
+                        when {
+                            fromAddressRegion.contains(boundingBox) ->
+                                Log.d("OCR_DEBUG", "✅ 'From' Address detected: ${text}")
+                            toAddressRegion.contains(boundingBox) ->
+                                Log.d("OCR_DEBUG", "✅ 'To' Address detected: ${text}")
+                            tracking.contains(boundingBox) ->
+                                Log.d("OCR_DEBUG", "✅ Tracking Number detected: ${text}")
+                            postalCodeRegion.contains(boundingBox) ->
+                                Log.d("OCR_DEBUG", "✅ Postal Code detected: ${text}")
+                            else ->
+                                Log.d("OCR_DEBUG", "❌ Text outside defined regions: ${text}")
                         }
                     }
                 }
@@ -146,16 +191,13 @@ import java.util.concurrent.ExecutorService
                 Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
             }
             .addOnCompleteListener {
-                // Mark text processing as complete
                 isTextProcessingComplete = true
-
                 Log.d("OCR", "recognizedText: $recognizedTextBlocks")
-
             }
 
         return recognizedTextBlocks
-
     }
+
 
     /**
      * Processes barcode scanning on the given InputImage.

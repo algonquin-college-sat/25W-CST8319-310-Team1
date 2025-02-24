@@ -27,6 +27,7 @@ import java.util.concurrent.Executors
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+
         // Initialize the camera executor
         cameraExecutor = Executors.newSingleThreadExecutor()
         checkCameraPermission()
