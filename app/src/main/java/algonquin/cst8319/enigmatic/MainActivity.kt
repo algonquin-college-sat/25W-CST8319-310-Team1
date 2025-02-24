@@ -75,6 +75,8 @@ import java.util.concurrent.Executors
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        textView = findViewById(R.id.textView)
+
         // Initialize the camera executor
         cameraExecutor = Executors.newSingleThreadExecutor()
         checkCameraPermission()
@@ -190,5 +192,12 @@ import java.util.concurrent.Executors
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
+    }
+
+    override fun onSuccess(result: String) {
+        runOnUiThread {
+            textView.text = result.toString()
+            textView.setTextColor(Color.GREEN)
+        }
     }
 }
