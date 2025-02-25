@@ -1,6 +1,7 @@
 package algonquin.cst8319.enigmatic
 
 //docScanner
+import algonquin.cst8319.enigmatic.data.FieldExtractor
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
 import android.util.Log
 import androidx.camera.core.ExperimentalGetImage
@@ -37,8 +38,8 @@ import java.util.concurrent.ExecutorService
 
 
     // data structures to store recognized text blocks and barcode value
-    private val recognizedTextBlocks = mutableListOf<String>()
     private var barcodeValue = ""
+    private var extractedFields = mutableListOf<String>()
 
     //BarcodeScanner instance
     private val options = BarcodeScannerOptions.Builder()
@@ -85,7 +86,7 @@ import java.util.concurrent.ExecutorService
             // outputToUI()
 
 //            if (isTextProcessingComplete && isBarcodeProcessingComplete) {
-//                if (recognizedTextBlocks.isNotEmpty() && barcodeValue.isNotEmpty() && !isSnackbarVisible) {
+//                if (extractedFields.isNotEmpty() && barcodeValue.isNotEmpty() && !isSnackbarVisible) {
 //                    outputToSnackbar(getOutput())
 //                }
 //            }
@@ -124,46 +125,46 @@ import java.util.concurrent.ExecutorService
 
                 Log.d("OCR", "Full detected text: ${visionText.text}")
 
-                // clear list of text blocks from previous image
-                recognizedTextBlocks.clear()
+                // clear list of extracted fields from previous image
+                extractedFields.clear()
 
-                for (block in visionText.textBlocks) {
-                    val boundingBox = block.boundingBox
-                    val cornerPoints = block.cornerPoints
-                    val text = block.text
+                // iterating through blocks/lines now deferred to the FieldExtractor
+//                for (block in visionText.textBlocks) {
+//
+//                    val boundingBox = block.boundingBox
+//                    val cornerPoints = block.cornerPoints
+//                    val text = block.text
+//
+//                    // logging of each block if necessary
+//                    // Log.d("OCR", "Detected text block: ${block.text}")
+//
+//                    for (line in block.lines) {
+//
+//                        // re-enable logging of each line if necessary
+//                        // Log.d("OCR", "Line text: ${line.text}")
+//
+//                        for (element in line.elements) {
+//
+//                            // re-enable logging of each line element if necessary
+//                            // Log.d("OCR", "Element text: ${element.text}")
+//                        }
+//                    }
+//                }
 
-                    // re-enable logging of each block if necessary
-                    // Log.d("OCR", "Full detected text: ${block.text}")
+                val fieldExtractor = FieldExtractor(visionText.textBlocks)
+                extractedFields = fieldExtractor.extractAllFields()
+                Log.d("OCR", extractedFields.toString())
 
-                    // add new text blocks to list
-                    if (text !in recognizedTextBlocks)
-                        recognizedTextBlocks.add(text)
-
-                    for (line in block.lines) {
-
-                        // re-enable logging of each line if necessary
-                        // Log.d("OCR", "Line text: ${line.text}")
-
-                        for (element in line.elements) {
-
-                            // re-enable logging of each line element if necessary
-                            // Log.d("OCR", "Element text: ${element.text}")
-                        }
-                    }
-                }
             }
             .addOnFailureListener { e ->
-                Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
+                //Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
             }
             .addOnCompleteListener {
                 // Mark text processing as complete
                 isTextProcessingComplete = true
-
-                Log.d("OCR", "recognizedText: $recognizedTextBlocks")
-
             }
 
-        return recognizedTextBlocks
+        return extractedFields
 
     }
 
@@ -190,7 +191,7 @@ import java.util.concurrent.ExecutorService
                 }
             }
             .addOnFailureListener { e ->
-                Log.e("Barcode", "Barcode scanning failed: ${e.localizedMessage}", e)
+                //Log.e("Barcode", "Barcode scanning failed: ${e.localizedMessage}", e)
             }
             .addOnCompleteListener {
                 // Reset flag so next frame can trigger barcode scanning
@@ -213,8 +214,8 @@ import java.util.concurrent.ExecutorService
         bindingMain.root.post {
             bindingMain.textView.text = ""
             if (isTextProcessingComplete && isBarcodeProcessingComplete) {
-                for (block in recognizedTextBlocks) {
-                    bindingMain.textView.append(block)
+                for (field in extractedFields) {
+                    bindingMain.textView.append(field)
                     bindingMain.textView.append("\n")
                 }
                 bindingMain.textView.append("Barcode: $barcodeValue")
@@ -233,11 +234,11 @@ import java.util.concurrent.ExecutorService
             } else {
                 output += "Barcode: $barcodeValue \n"
             }
-            if (recognizedTextBlocks.isEmpty()) {
+            if (extractedFields.isEmpty()) {
                 output += "No valid text recognized\n"
             } else {
-                for (block in recognizedTextBlocks) {
-                    output += block + "\n"
+                for (field in extractedFields) {
+                    output += field + "\n"
                 }
             }
         }
@@ -253,9 +254,10 @@ import java.util.concurrent.ExecutorService
 
         val snackbar = Snackbar.make(bindingMain.root, extract, Snackbar.LENGTH_INDEFINITE)
         snackbar.setAction("DISMISS") {
-
-            snackbar.dismiss()
             bindingMain.textView.text = extract
+            extractedFields.clear()
+            barcodeValue = ""
+            snackbar.dismiss()
             isSnackbarVisible = false
         }
         snackbar.setTextMaxLines(50)
@@ -310,7 +312,7 @@ import java.util.concurrent.ExecutorService
         recognizeText(image)
         processBarcode(image)
 
-        if (recognizedTextBlocks.isNotEmpty() && barcodeValue.isNotEmpty() && !isSnackbarVisible) {
+        if (extractedFields.isNotEmpty() && barcodeValue.isNotEmpty() && !isSnackbarVisible) {
             outputToSnackbar(getOutput())
         }
 
