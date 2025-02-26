@@ -132,7 +132,15 @@ import java.util.concurrent.Executors
      * We can pause/unbind, then launch the Document Scanner flow.
      */
     override fun onLabelDetected() {
+        // trying to prevent duplicate launches ¯\_(ツ)_/¯
+        if (isScanningInProgress) {
+            Log.d("LabelDetectedCallback", "Doc scanner already launched, skipping...")
+            return
+        }
+
         Log.d("LabelDetectedCallback", "A label was detected. Launching doc scanner...")
+
+        isScanningInProgress = true
 
         // Unbind (optional) or set a pause flag in the analyzer
         cameraProvider.unbindAll()  // or leave the preview bound if you want
@@ -152,6 +160,9 @@ import java.util.concurrent.Executors
 
     private fun displayResults(image: Uri, extractedFields: List<String>, barcodeValue: String) {
         Log.d("displayResults", "Displaying results: ${extractedFields.joinToString("\n")}")
+
+        // debugging
+        isScanningInProgress = false
 
         // Update UI to show the scanned image and extracted fields
         binding.previewView.visibility = View.GONE
