@@ -1,6 +1,5 @@
 package algonquin.cst8319.enigmatic
 
-//docScanner
 import algonquin.cst8319.enigmatic.data.FieldExtractor
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
 import android.util.Log
@@ -24,7 +23,7 @@ import java.util.concurrent.ExecutorService
     // ML Kit's TextRecognizer instance, used for detecting text in images
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-    // interface for your Activity
+    // interface for Activity
     interface LabelDetectedCallback {
         fun onLabelDetected()
     }

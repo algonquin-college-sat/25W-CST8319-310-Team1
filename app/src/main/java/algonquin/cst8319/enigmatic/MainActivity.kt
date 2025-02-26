@@ -34,9 +34,9 @@ import java.util.concurrent.Executors
     //docScanner stuff
     val documentScannerOptions = GmsDocumentScannerOptions.Builder()
         .setGalleryImportAllowed(false)
-        .setPageLimit(1) // or 2, etc.
+        .setPageLimit(1) // or 2 if we want to somehow store multiple scans per session
         .setResultFormats(
-            GmsDocumentScannerOptions.RESULT_FORMAT_JPEG // or PDF or both
+            GmsDocumentScannerOptions.RESULT_FORMAT_JPEG // or PDF is we want
         )
         .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
         .build()
