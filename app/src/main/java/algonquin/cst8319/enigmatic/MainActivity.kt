@@ -2,8 +2,11 @@ package algonquin.cst8319.enigmatic
 
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.os.Looper
 import android.util.Log
+import android.view.View
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -55,12 +58,16 @@ import java.util.concurrent.Executors
                         // Do something with this Uri, e.g. run Text Recognition
                         Log.d("DocScanner", "JPEG page $index => $imageUri")
                         val scannedImage = InputImage.fromFilePath(this,imageUri)
+
                         imageAnalyzer.analyzeImage(scannedImage)
+
+                        android.os.Handler(Looper.getMainLooper()).postDelayed({
+                            displayResults(imageUri, imageAnalyzer.extractedFields, imageAnalyzer.barcodeValue)
+                        }, 2000)
                     }
                 }
             }
         }
-        startCamera()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -118,6 +125,8 @@ import java.util.concurrent.Executors
         }, ContextCompat.getMainExecutor(this))
     }
 
+    private var isScanningInProgress = false
+
     /**
      * This gets called by the ImageAnalyzer when it detects a label.
      * We can pause/unbind, then launch the Document Scanner flow.
@@ -139,6 +148,32 @@ import java.util.concurrent.Executors
             .addOnFailureListener { e ->
                 Log.e("DocScanner", "Failed to launch doc scanner: ${e.message}", e)
             }
+    }
+
+    private fun displayResults(image: Uri, extractedFields: List<String>, barcodeValue: String) {
+        Log.d("displayResults", "Displaying results: ${extractedFields.joinToString("\n")}")
+
+        // Update UI to show the scanned image and extracted fields
+        binding.previewView.visibility = View.GONE
+        binding.resultContainer.visibility = View.VISIBLE
+        binding.imageView.visibility = View.VISIBLE
+        binding.textView.visibility = View.VISIBLE
+        binding.fabDismiss.visibility = View.VISIBLE
+
+        binding.textView.text = ""
+        binding.imageView.setImageURI(image)
+        imageAnalyzer.outputToUI()
+
+
+        // Add FloatingActionButton for "Dismiss"
+        binding.fabDismiss.setOnClickListener {
+            binding.previewView.visibility = View.VISIBLE
+            binding.resultContainer.visibility = View.GONE
+            binding.imageView.visibility = View.GONE
+            binding.textView.visibility = View.GONE
+            binding.fabDismiss.visibility = View.GONE
+            startCamera()
+        }
     }
 
     override fun onDestroy() {

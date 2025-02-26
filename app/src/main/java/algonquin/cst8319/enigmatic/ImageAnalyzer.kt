@@ -38,8 +38,8 @@ import java.util.concurrent.ExecutorService
 
 
     // data structures to store recognized text blocks and barcode value
-    private var barcodeValue = ""
-    private var extractedFields = mutableListOf<String>()
+    var barcodeValue = ""
+    var extractedFields = mutableListOf<String>()
 
     //BarcodeScanner instance
     private val options = BarcodeScannerOptions.Builder()
@@ -119,8 +119,6 @@ import java.util.concurrent.ExecutorService
                     isPaused = true
                     // Notify the Activity
                     labelDetectedCallback.onLabelDetected()
-
-                    bindingMain.textView.text = "Label detected, scanning..."
                 }
 
                 Log.d("OCR", "Full detected text: ${visionText.text}")
@@ -209,7 +207,7 @@ import java.util.concurrent.ExecutorService
      * content in the `textView`, then appends each recognized text block followed
      * by the barcode value if both text and barcode processing are complete.
      */
-    private fun outputToUI() {
+    fun outputToUI() {
         // Ensure that UI updates run on the main thread
         bindingMain.root.post {
             bindingMain.textView.text = ""
@@ -226,7 +224,7 @@ import java.util.concurrent.ExecutorService
     /**
      * Get extracted text and barcode and return as a String.
      */
-    private fun getOutput(): String {
+    fun getOutput(): String {
         var output = ""
         if (isTextProcessingComplete && isBarcodeProcessingComplete) {
             if (barcodeValue.isEmpty()) {
@@ -312,8 +310,10 @@ import java.util.concurrent.ExecutorService
         recognizeText(image)
         processBarcode(image)
 
-        if (extractedFields.isNotEmpty() && barcodeValue.isNotEmpty() && !isSnackbarVisible) {
-            outputToSnackbar(getOutput())
+        if (isTextProcessingComplete && isBarcodeProcessingComplete) {
+            if (extractedFields.isNotEmpty() && barcodeValue.isNotEmpty()) {
+                outputToUI()
+            }
         }
 
     }
