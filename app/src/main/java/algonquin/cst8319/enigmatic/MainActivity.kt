@@ -3,6 +3,7 @@ package algonquin.cst8319.enigmatic
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
