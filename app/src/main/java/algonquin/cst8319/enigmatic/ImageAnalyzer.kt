@@ -81,11 +81,6 @@ import java.util.concurrent.ExecutorService
 //            recognizeText(image)
 //            processBarcode(image)
 
-            if (recognizedTextBlocks.isNotEmpty() || barcodeValue.isNotEmpty()) {
-                listener.onSuccess(outputToUI())
-                Thread.sleep(1000)
-            }
-
             // output to TextView now called from within the snackbar dismiss code block
             // outputToUI()
 
@@ -224,16 +219,6 @@ import java.util.concurrent.ExecutorService
             }
         }*/
 
-        var output : String = ""
-
-        if (isTextProcessingComplete && isBarcodeProcessingComplete) {
-            for (block in recognizedTextBlocks) {
-                output += block
-                output += "\n"
-            }
-            output += "Barcode: $barcodeValue"
-        }
-        return output
     }
 
     /**
@@ -262,6 +247,7 @@ import java.util.concurrent.ExecutorService
      * Displays extracted text and barcode to Snackbar.
      * Snackbar is dismissed when it's dismiss action is clicked.
      */
+    /*
     private fun outputToSnackbar(extract: String) {
         isSnackbarVisible = true
 
@@ -275,7 +261,7 @@ import java.util.concurrent.ExecutorService
         }
         snackbar.setTextMaxLines(50)
         snackbar.show()
-    }
+    }*/
 
     /**
      * A helper method to process detected text blocks, lines, and elements for further use.

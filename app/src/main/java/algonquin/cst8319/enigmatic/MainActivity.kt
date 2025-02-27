@@ -94,7 +94,6 @@ import java.util.concurrent.Executors
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
         }
 
-        val textView: TextView = findViewById(R.id.textView)
         textView.movementMethod = ScrollingMovementMethod()
 
         // Initialize the camera executor
