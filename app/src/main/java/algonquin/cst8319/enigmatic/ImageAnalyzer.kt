@@ -83,7 +83,7 @@ import java.util.concurrent.ExecutorService
 
             if (recognizedTextBlocks.isNotEmpty() || barcodeValue.isNotEmpty()) {
                 listener.onSuccess(outputToUI())
-                //Thread.sleep(1000)
+                Thread.sleep(1000)
             }
 
             // output to TextView now called from within the snackbar dismiss code block

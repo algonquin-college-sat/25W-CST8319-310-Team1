@@ -60,4 +60,6 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
+
+    implementation ("com.google.android.material:material:1.11.0")
 }

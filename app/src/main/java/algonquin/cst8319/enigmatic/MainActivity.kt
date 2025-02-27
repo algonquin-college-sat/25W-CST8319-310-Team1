@@ -70,6 +70,10 @@ import java.util.concurrent.Executors
         }
     }
 
+    private lateinit var bottomSheet: View
+    private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -77,12 +81,28 @@ import java.util.concurrent.Executors
 
         textView = findViewById(R.id.textView)
 
+        // Get the BottomSheet view from layout
+        bottomSheet = findViewById(R.id.bottom_sheet_layout)
+
+        // Set up BottomSheetBehavior
+        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
+        bottomSheetBehavior.isDraggable = false
+
+        val closeEFab: MaterialButton = findViewById(R.id.close_efab)
+        closeEFab.setOnClickListener {
+            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        }
+
+        val textView: TextView = findViewById(R.id.textView)
+        textView.movementMethod = ScrollingMovementMethod()
+
         // Initialize the camera executor
         cameraExecutor = Executors.newSingleThreadExecutor()
         checkCameraPermission()
         // start the camera
         startCamera()
     }
+
     private fun checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -118,7 +138,10 @@ import java.util.concurrent.Executors
                 val imageAnalysis = imageAnalyzer.createImageAnalysis(cameraExecutor)
 
                 cameraProvider.bindToLifecycle(
-                    this as LifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalysis
+                    this as LifecycleOwner,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview,
+                    imageAnalysis
                 )
             } catch (e: Exception) {
                 Log.d("ERROR", e.message.toString())
@@ -196,8 +219,9 @@ import java.util.concurrent.Executors
 
     override fun onSuccess(result: String) {
         runOnUiThread {
-            textView.text = result.toString()
-            textView.setTextColor(Color.GREEN)
+            textView.text = result
+            bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
     }
+
 }
