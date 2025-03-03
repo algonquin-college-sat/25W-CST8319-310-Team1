@@ -2,7 +2,6 @@ package algonquin.cst8319.enigmatic.data
 
 import android.util.Log
 import com.google.mlkit.vision.text.Text.TextBlock
-import java.security.KeyStore.TrustedCertificateEntry
 
 class FieldExtractor(
     private var scannedTextBlocks: List<TextBlock>,
@@ -51,7 +50,7 @@ class FieldExtractor(
             destPostalCode = extractDestPostalCode()
             trackPin = extractTrackPin()
             // extractFromAddress() needs to be fixed before enabling, to prevent app crashing
-//            fromAddress = extractFromAddress()
+            fromAddress = extractFromAddress()
             productDimension = extractProductDimension()
             productWeight = extractProductWeight()
             productInstruction = extractProductInstruction()
@@ -221,7 +220,7 @@ class FieldExtractor(
             var nextBlockIndex = foundFromAddressHeaderBlockIndex + 1
 
             // continue until postal code was found so we get complete address
-            while (!extractedFromAddress.contains(postalCodeRegex)) {
+            while (nextBlockIndex < cleanScannedText.size && !extractedFromAddress.contains(postalCodeRegex)) {
                 // using a hack here: there is often other text blocks in between 'from' header and
                 // the 'address' text block, i.e. dimension or weight or MANIFEST, so skipping those blocks
                 // is required

@@ -13,5 +13,12 @@ dependencyResolutionManagement {
     }
 }
 
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
 rootProject.name = "enigmatic_ocr"
 include(":app")
