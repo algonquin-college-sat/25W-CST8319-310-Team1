@@ -148,7 +148,7 @@ class FieldExtractor(
             var nextBlockIndex = foundToAddressHeaderBlockIndex + 1
 
             // continue until postal code was found so we get complete address
-            while (!extractedToAddress.contains(postalCodeRegex)) {
+            while (nextBlockIndex < cleanScannedText.size && !extractedToAddress.contains(postalCodeRegex)) {
                 for (line in cleanScannedText[nextBlockIndex]) {
                     extractedToAddress += "${line}, "
                 }
