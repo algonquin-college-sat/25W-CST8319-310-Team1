@@ -38,6 +38,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
     private lateinit var imageAnalyzer: ImageAnalyzer
 
     private lateinit var textView: TextView
+    private lateinit var bottomSheetHeader: TextView
     private lateinit var closeEfab: ExtendedFloatingActionButton
 
     private lateinit var bottomSheet: View
@@ -87,24 +88,19 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        textView = findViewById(R.id.textView)
-        closeEfab = findViewById(R.id.close_efab)
-
         // Get the BottomSheet view from layout
         bottomSheet = findViewById(R.id.bottom_sheet_layout)
+        textView = findViewById(R.id.textView)
+        bottomSheetHeader = findViewById(R.id.bottom_sheet_header)
+        closeEfab = findViewById(R.id.close_efab)
 
         // Set up BottomSheetBehavior
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
         bottomSheetBehavior.isDraggable = false
-
-        /*
-        val closeEFab: MaterialButton = findViewById(R.id.close_efab)
-        closeEFab.setOnClickListener {
-            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
-        }*/
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
 
         textView.movementMethod = ScrollingMovementMethod()
-        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        bottomSheetHeader.text = "Scanning"
 
         // Initialize the camera executor
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -222,6 +218,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
         closeEfab.setOnClickListener {
             binding.previewView.visibility = View.VISIBLE
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+            bottomSheetHeader.text = "Scanning"
             binding.resultContainer.visibility = View.GONE
             binding.imageView.visibility = View.GONE
             //binding.textView.visibility = View.GONE
@@ -237,6 +234,8 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
     override fun onSuccess(result: String) {
         runOnUiThread {
+            bottomSheetHeader.text = "Label Information"
+            textView.text = ""
             textView.text = result
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
