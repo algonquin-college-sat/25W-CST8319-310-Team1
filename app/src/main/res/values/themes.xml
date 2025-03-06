@@ -2,8 +2,16 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.enigmatic_ocr" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/light_primary</item>
+        <item name="colorOnPrimary">@color/dark_on_primary</item>
+
+        <item name="colorSecondary">@color/light_secondary</item>
+        <item name="colorSecondaryVariant">@color/light_secondary_variant</item>
+        <item name="colorOnSecondary">@color/light_on_secondary</item>
+
+        <item name="strokeColor">@color/light_stroke</item>
     </style>
 
     <style name="Theme.enigmatic_ocr" parent="Base.Theme.enigmatic_ocr" />
+
 </resources>
