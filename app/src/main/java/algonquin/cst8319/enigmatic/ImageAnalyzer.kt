@@ -19,7 +19,8 @@ import java.util.concurrent.ExecutorService
 
 
 @ExperimentalGetImage class ImageAnalyzer(private var bindingMain: ActivityMainBinding,
-                                          private val labelDetectedCallback: LabelDetectedCallback) : ImageAnalysis.Analyzer {
+                                          private val labelDetectedCallback: LabelDetectedCallback,
+                                          private val listener: ImageAnalyzerListener) : ImageAnalysis.Analyzer {
     // ML Kit's TextRecognizer instance, used for detecting text in images
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
@@ -208,17 +209,19 @@ import java.util.concurrent.ExecutorService
      */
     fun outputToUI() {
         // Ensure that UI updates run on the main thread
-        bindingMain.root.post {
-            bindingMain.textView.text = ""
-            if (isTextProcessingComplete && isBarcodeProcessingComplete) {
-                for (field in extractedFields) {
-                    bindingMain.textView.append(field)
-                    bindingMain.textView.append("\n")
-                }
-                bindingMain.textView.append("Barcode: $barcodeValue")
+        //bindingMain.root.post {
+        //bindingMain.textView.text = ""
+        var text = ""
+        if (isTextProcessingComplete && isBarcodeProcessingComplete) {
+            for (field in extractedFields) {
+                //bindingMain.textView.append(field)
+                //bindingMain.textView.append("\n")
+                text += field + "\n"
             }
-        }*/
-
+            //bindingMain.textView.append("Barcode: $barcodeValue")
+            text += "Barcode: $barcodeValue"
+            listener.onSuccess(text)
+        }
     }
 
     /**

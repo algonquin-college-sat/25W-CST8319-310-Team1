@@ -1,6 +1,7 @@
 package algonquin.cst8319.enigmatic
 
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
+import algonquin.cst8319.enigmatic.databinding.BottomSheetBinding
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -10,7 +11,6 @@ import android.util.Log
 import android.view.View
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.Preview
@@ -24,13 +24,24 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import android.text.method.ScrollingMovementMethod
+import android.widget.TextView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 
-@ExperimentalGetImage class MainActivity : AppCompatActivity(), ImageAnalyzer.LabelDetectedCallback {
+@ExperimentalGetImage class MainActivity : AppCompatActivity(), ImageAnalyzer.LabelDetectedCallback, ImageAnalyzerListener {
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var cameraProvider: ProcessCameraProvider
 
     private lateinit var binding : ActivityMainBinding
     private lateinit var imageAnalyzer: ImageAnalyzer
+
+    private lateinit var textView: TextView
+    private lateinit var closeEfab: ExtendedFloatingActionButton
+
+    private lateinit var bottomSheet: View
+    private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
 
     //docScanner stuff
     val documentScannerOptions = GmsDocumentScannerOptions.Builder()
@@ -71,16 +82,13 @@ import java.util.concurrent.Executors
         }
     }
 
-    private lateinit var bottomSheet: View
-    private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         textView = findViewById(R.id.textView)
+        closeEfab = findViewById(R.id.close_efab)
 
         // Get the BottomSheet view from layout
         bottomSheet = findViewById(R.id.bottom_sheet_layout)
@@ -89,12 +97,14 @@ import java.util.concurrent.Executors
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
         bottomSheetBehavior.isDraggable = false
 
+        /*
         val closeEFab: MaterialButton = findViewById(R.id.close_efab)
         closeEFab.setOnClickListener {
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
-        }
+        }*/
 
         textView.movementMethod = ScrollingMovementMethod()
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
 
         // Initialize the camera executor
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -134,7 +144,7 @@ import java.util.concurrent.Executors
                 cameraProvider.unbindAll()
 
                 // instantiate the ImageAnalyzer and bind it to the cameraProvider
-                imageAnalyzer = ImageAnalyzer(binding, this)
+                imageAnalyzer = ImageAnalyzer(binding, this, this)
                 val imageAnalysis = imageAnalyzer.createImageAnalysis(cameraExecutor)
 
                 cameraProvider.bindToLifecycle(
@@ -193,21 +203,29 @@ import java.util.concurrent.Executors
         binding.previewView.visibility = View.GONE
         binding.resultContainer.visibility = View.VISIBLE
         binding.imageView.visibility = View.VISIBLE
-        binding.textView.visibility = View.VISIBLE
-        binding.fabDismiss.visibility = View.VISIBLE
+        //binding.textView.visibility = View.VISIBLE
+        //binding.fabDismiss.visibility = View.VISIBLE
 
-        binding.textView.text = ""
+        textView.text = ""
         binding.imageView.setImageURI(image)
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
         imageAnalyzer.outputToUI()
 
 
+        /*
+        closeEFab.setOnClickListener {
+            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        } */
+
         // Add FloatingActionButton for "Dismiss"
-        binding.fabDismiss.setOnClickListener {
+
+        closeEfab.setOnClickListener {
             binding.previewView.visibility = View.VISIBLE
+            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
             binding.resultContainer.visibility = View.GONE
             binding.imageView.visibility = View.GONE
-            binding.textView.visibility = View.GONE
-            binding.fabDismiss.visibility = View.GONE
+            //binding.textView.visibility = View.GONE
+            //binding.fabDismiss.visibility = View.GONE
             startCamera()
         }
     }
