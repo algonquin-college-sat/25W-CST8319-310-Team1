@@ -48,6 +48,20 @@ class FieldExtractor(
     private var foundProductWeightIndex = -1
     private var foundProductInstructionIndex = -1
     private var foundReferenceIndex = -1
+
+
+    // All getters for private fields
+    fun getProductType(): String {return productType}
+    fun getToAddress(): String {return toAddress}
+    fun getDestPostalCode(): String {return destPostalCode}
+    fun getTrackPin(): String {return trackPin}
+    fun getFromAddress(): String {return fromAddress}
+    fun getProductDimension(): String {return productDimension}
+    fun getProductWeight(): String {return productWeight}
+    fun getProductInstruction(): String {return productInstruction}
+    fun getReference(): String {return reference}
+
+
     /**
      * Sole public function for this class, when called it sorts the instance's list of text
      * blocks and then calls each private function relevant to field extraction, finally it
