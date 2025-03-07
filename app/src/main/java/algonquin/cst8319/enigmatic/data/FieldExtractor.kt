@@ -33,6 +33,7 @@ class FieldExtractor(
     private val fromAddressHeaderRegex = Regex("FROM.*DE", RegexOption.IGNORE_CASE)
     private val productDimensionRegex = Regex("""\d*x\d*x\d*cm""")
     private val productWeightRegex = Regex("KG")
+    private val productWeightValueRegex = Regex("""\d*[.]\d\d\d""")
     private val productInstructions = listOf("SIGNATURE", "18+ SIGNATURE", "19+ SIGNATURE", "21+ SIGNATURE", "CARD FOR PICKUP", "DELIVER TO PO", "LEAVE AT THE DOOR", "DO NOT SAFE DROP")
     private val referenceRegex = Regex("Ref.*R[eé]f", RegexOption.IGNORE_CASE)
 
@@ -49,7 +50,6 @@ class FieldExtractor(
             toAddress = extractToAddress()
             destPostalCode = extractDestPostalCode()
             trackPin = extractTrackPin()
-            // extractFromAddress() needs to be fixed before enabling, to prevent app crashing
             fromAddress = extractFromAddress()
             productDimension = extractProductDimension()
             productWeight = extractProductWeight()
@@ -130,7 +130,6 @@ class FieldExtractor(
                 if (line.contains(toAddressHeaderRegex)) {
                     foundToAddressHeaderBlockIndex = cleanScannedText.indexOf(block)
                     foundToAddressHeaderLineIndex = block.indexOf(line)
-                    Log.d("OCR", "foundToAddressHeaderLineIndex = ${foundToAddressHeaderLineIndex}")
                     break
                 }
             }
@@ -148,15 +147,37 @@ class FieldExtractor(
             var nextBlockIndex = foundToAddressHeaderBlockIndex + 1
 
             // continue until postal code was found so we get complete address
-            while (nextBlockIndex < cleanScannedText.size && !extractedToAddress.contains(postalCodeRegex)) {
+            var blockIsAddressRelated = true
+            while (nextBlockIndex < cleanScannedText.size &&
+                    !extractedToAddress.contains(postalCodeRegex) &&
+                    blockIsAddressRelated) {
                 for (line in cleanScannedText[nextBlockIndex]) {
-                    extractedToAddress += "${line}, "
+                    // sometimes postal code in address is not recognized properly,
+                    // i.e. digit read as character, so loop continues through next blocks
+                    // so adding check to make sure the product instruction (ie '18+ SIGNATURE')
+                    // which is the next block after 'to address' does not slip into the extracted address
+                    for (instruction in productInstructions) {
+                        if (line.equals(instruction, true)) {
+                            blockIsAddressRelated = false
+                            break
+                        }
+                    }
+                    if (blockIsAddressRelated) {
+                        extractedToAddress += "${line}, "
+                    }
+                    else {
+                        break
+                    }
                 }
                 nextBlockIndex += 1
             }
 
         }
 
+        // clean up by removing last comma
+        if (extractedToAddress.endsWith(", ")) {
+            extractedToAddress = extractedToAddress.substringBeforeLast(",")
+        }
         extractedFields.add("toAddress: $extractedToAddress")
         return extractedToAddress
     }
@@ -167,8 +188,10 @@ class FieldExtractor(
 
         for (block in cleanScannedText) {
             if (block.size == 1) {
-                if (block[0].contains(postalCodeRegex))
+                if (block[0].contains(postalCodeRegex)) {
                     extractedDestPostalCode = block[0]
+                    break
+                }
             }
         }
 
@@ -182,8 +205,15 @@ class FieldExtractor(
 
         for (block in cleanScannedText) {
             if (block.size == 1) {
-                if (block[0].contains(trackPinRegex))
+                if (block[0].contains(trackPinRegex)) {
+                    // sometimes found block will be the 'PIN/NIP:' near bottom of label
+                    if (block[0].contains(":")) {
+                        extractedTrackPin = block[0].substringAfterLast(":")
+                        break
+                    }
                     extractedTrackPin = block[0]
+                    break
+                }
             }
         }
 
@@ -226,7 +256,10 @@ class FieldExtractor(
                 // is required
                 var isAddressRelated = true
                 for (line in cleanScannedText[nextBlockIndex]) {
-                    if (line.contains(productDimensionRegex) || line.contains(productWeightRegex) || line.contains("MANIFEST", true)) {
+                    if (line.contains(productDimensionRegex) ||
+                        line.contains(productWeightRegex) ||
+                        line.contains(productWeightValueRegex) ||
+                        line.contains("MANIFEST", true)) {
                         isAddressRelated = false
                         break
                     }
@@ -242,6 +275,10 @@ class FieldExtractor(
 
         }
 
+        // clean up by removing last comma
+        if (extractedFromAddress.endsWith(", ")) {
+            extractedFromAddress = extractedFromAddress.substringBeforeLast(",")
+        }
         extractedFields.add("fromAddress: $extractedFromAddress")
         return extractedFromAddress
     }
@@ -251,8 +288,10 @@ class FieldExtractor(
 
         for (block in cleanScannedText) {
             if (block.size == 1) {
-                if (block[0].contains(productDimensionRegex))
+                if (block[0].contains(productDimensionRegex)) {
                     extractedProductDimension = block[0]
+                    break
+                }
             }
         }
 
@@ -274,8 +313,27 @@ class FieldExtractor(
         }
 
         if(foundProductWeightBlockIndex>=0) {
-            // assuming weight value always the first line in that block
-            extractedProductWeight = cleanScannedText[foundProductWeightBlockIndex][0]
+            // first line of block is usually weight value, but sometimes the value is
+            // in a previous block, so checking that first line does not contain 'kg'
+            if (!cleanScannedText[foundProductWeightBlockIndex][0].contains(productWeightRegex)) {
+                extractedProductWeight = cleanScannedText[foundProductWeightBlockIndex][0]
+            }
+            // check previous block and make sure it's not the product dimensions or 'from/to' header
+            else if (!cleanScannedText[foundProductWeightBlockIndex - 1][0].contains(productDimensionRegex) &&
+                        !cleanScannedText[foundProductWeightBlockIndex - 1][0].contains(fromAddressHeaderRegex)){
+                extractedProductWeight = cleanScannedText[foundProductWeightBlockIndex - 1][0]
+
+            }
+            // check 2nd previous block and make sure it's not the product dimensions or 'from/to' header
+            else if (!cleanScannedText[foundProductWeightBlockIndex - 2][0].contains(productDimensionRegex) &&
+                !cleanScannedText[foundProductWeightBlockIndex - 2][0].contains(fromAddressHeaderRegex)){
+                extractedProductWeight = cleanScannedText[foundProductWeightBlockIndex - 2][0]
+
+            }
+            // lastly, assume that the product weight value is the 3rd previous block
+            else {
+                extractedProductWeight = cleanScannedText[foundProductWeightBlockIndex - 3][0]
+            }
         }
 
         extractedFields.add("productWeight: ${extractedProductWeight}kg")
