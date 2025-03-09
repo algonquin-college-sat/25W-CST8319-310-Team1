@@ -170,7 +170,7 @@ import java.util.concurrent.ExecutorService
      */
     fun outputToUI() {
         if (isTextProcessingComplete && isBarcodeProcessingComplete) {
-            listener.onSuccess(labelJSON.toString())
+            listener.onSuccess(labelJSON.toJson())
         }
     }
 
