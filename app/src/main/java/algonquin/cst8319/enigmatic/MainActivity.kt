@@ -1,7 +1,6 @@
 package algonquin.cst8319.enigmatic
 
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
-import algonquin.cst8319.enigmatic.databinding.BottomSheetBinding
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -27,11 +26,11 @@ import java.util.concurrent.Executors
 import android.text.method.ScrollingMovementMethod
 import android.widget.TextView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import java.io.File
 
 @ExperimentalGetImage class MainActivity : AppCompatActivity(), ImageAnalyzer.LabelDetectedCallback, ImageAnalyzerListener {
+
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var cameraProvider: ProcessCameraProvider
 
@@ -46,7 +45,7 @@ import java.io.File
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
 
     //docScanner stuff
-    val documentScannerOptions = GmsDocumentScannerOptions.Builder()
+    private val documentScannerOptions = GmsDocumentScannerOptions.Builder()
         .setGalleryImportAllowed(false)
         .setPageLimit(1) // or 2 if we want to somehow store multiple scans per session
         .setResultFormats(
@@ -56,7 +55,7 @@ import java.io.File
         .build()
 
     // The client that launches the document scanner flow
-    val docScannerClient = GmsDocumentScanning.getClient(documentScannerOptions)
+    private val docScannerClient = GmsDocumentScanning.getClient(documentScannerOptions)
 
     // Define scannerLauncher:
     private val scannerLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
@@ -76,13 +75,19 @@ import java.io.File
                         imageAnalyzer.analyzeImageConcurrently(scannedImage)
 
                         android.os.Handler(Looper.getMainLooper()).postDelayed({
-                            displayResults(imageUri, imageAnalyzer.extractedFields, imageAnalyzer.barcodeValue)
+                            // create labelJSON
+                            imageAnalyzer.createLabelJSON()
+                            // output to UI
+                            displayResults(imageUri, imageAnalyzer.getExtractedFields(), imageAnalyzer.getBarcodeValue())
                         }, 2000)
                     }
                 }
             }
         }
     }
+
+    // Status flags
+    private var isScanningInProgress = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -145,7 +150,7 @@ import java.io.File
                 cameraProvider.unbindAll()
 
                 // instantiate the ImageAnalyzer and bind it to the cameraProvider
-                imageAnalyzer = ImageAnalyzer(binding, this, this)
+                imageAnalyzer = ImageAnalyzer(this, this)
                 val imageAnalysis = imageAnalyzer.createImageAnalysis(cameraExecutor)
 
                 cameraProvider.bindToLifecycle(
@@ -160,8 +165,6 @@ import java.io.File
             }
         }, ContextCompat.getMainExecutor(this))
     }
-
-    private var isScanningInProgress = false
 
     /**
      * This gets called by the ImageAnalyzer when it detects a label.
@@ -184,7 +187,7 @@ import java.io.File
         startDocumentScanner()
     }
 
-    fun startDocumentScanner() {
+    private fun startDocumentScanner() {
         docScannerClient.getStartScanIntent(this)
             .addOnSuccessListener { intentSender ->
                 scannerLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
@@ -204,30 +207,19 @@ import java.io.File
         binding.previewView.visibility = View.GONE
         binding.resultContainer.visibility = View.VISIBLE
         binding.imageView.visibility = View.VISIBLE
-        //binding.textView.visibility = View.VISIBLE
-        //binding.fabDismiss.visibility = View.VISIBLE
 
         textView.text = ""
         binding.imageView.setImageURI(image)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
         imageAnalyzer.outputToUI()
 
-
-        /*
-        closeEFab.setOnClickListener {
-            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
-        } */
-
         // Add FloatingActionButton for "Dismiss"
-
         closeEfab.setOnClickListener {
             binding.previewView.visibility = View.VISIBLE
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
             bottomSheetHeader.text = "Scanning"
             binding.resultContainer.visibility = View.GONE
             binding.imageView.visibility = View.GONE
-            //binding.textView.visibility = View.GONE
-            //binding.fabDismiss.visibility = View.GONE
             startCamera()
         }
     }

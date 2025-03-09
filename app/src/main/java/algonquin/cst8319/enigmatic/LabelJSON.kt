@@ -1,19 +1,24 @@
 package algonquin.cst8319.enigmatic
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+
 
 @Serializable
 data class LabelJSON(
-    private var productType : String,
-    private var toAddress : String,
-    private var destPostalCode : String,
-    private var trackPin : String,
-    private var barCode : String,
-    private var fromAddress : String,
-    private var productDimension : String,
-    private var productWeight : String,
-    private var productInstruction : String,
-    private var reference : String
-) {
+    private var productType: String,
+    private var toAddress: String,
+    private var destPostalCode: String,
+    private var trackPin: String,
+    private var barCode: String,
+    private var fromAddress: String,
+    private var productDimension: String,
+    private var productWeight: String,
+    private var productInstruction: String,
+    private var reference: String
+)
+
+{
     fun getProductType() = this.productType
 
     fun setProductType(productType: String) {
@@ -74,4 +79,12 @@ data class LabelJSON(
         this.reference = reference
     }
 
+    /**
+     * Converts the object into a properly formatted JSON string.
+     * Uses Kotlinx Serialization for accurate JSON representation.
+     */
+    fun toJson(): String {
+        return Json { prettyPrint = true }.encodeToString(this)
+    }
 }
+

@@ -22,24 +22,32 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicBoolean
 
 
+
 @ExperimentalGetImage class ImageAnalyzer(private var bindingMain: ActivityMainBinding,
-                                          private val labelDetectedCallback: LabelDetectedCallback,
+                                          private val labelDetectedCallback: ImageAnalyzer.LabelDetectedCallback,
                                           private val listener: ImageAnalyzerListener) : ImageAnalysis.Analyzer {
 
-    // Interface for Activity
+    // FieldExtractor instance - initialized in recognizeText method
+    private lateinit var fieldExtractor: FieldExtractor
+
+    // interface for Activity
     interface LabelDetectedCallback {
         fun onLabelDetected()
     }
 
+
     // ML Kit components
     // ML Kit's TextRecognizer instance, used for detecting text in images
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-    //BarcodeScanner instance
-    private val barcodeScanner = BarcodeScanning.getClient(BarcodeScannerOptions.Builder()
-        .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
-        .build())
 
-// Added logging to track performance
+    //BarcodeScanner instance
+    private val barcodeScanner = BarcodeScanning.getClient(
+        BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
+            .build()
+    )
+
+    // Added logging to track performance
     // Logging
     private val logger = KotlinLogging.logger {}
 
@@ -67,8 +75,21 @@ import java.util.concurrent.atomic.AtomicBoolean
     // Results - data structures to store recognized text blocks and barcode value
     var barcodeValue = ""
     var extractedFields = mutableListOf<String>()
+    private lateinit var labelJSON: LabelJSON
+    // Status flags
+//    private var isTextProcessingComplete = false
+//    private var isBarcodeProcessingComplete = false
+//    private var isBarcodeProcessing = false
+//    private var isPaused = false
 
+    // getters
+    fun getBarcodeValue(): String {
+        return barcodeValue
+    }
 
+    fun getExtractedFields(): List<String> {
+        return extractedFields
+    }
 
     /**
      * Creates an ImageAnalysis use case with the desired settings and analyzer.
@@ -79,6 +100,7 @@ import java.util.concurrent.atomic.AtomicBoolean
         val imageAnalyzer = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) // Keeps only the latest frame
             .build().apply {
+
 // Changed from using a lambda to directly using this class
                 setAnalyzer(cameraExecutor, this@ImageAnalyzer)
 //                setAnalyzer(cameraExecutor) { imageProxy ->
@@ -86,9 +108,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 //                    // the closing of the image proxy was moved to the analyze() function below
 //                    // imageProxy.close()
 //                }
+
             }
         return imageAnalyzer
-    } /**
+    }
+
+    /**
      * This method is called for every frame that the ImageAnalysis use case processes.
      * Converts the ImageProxy to an InputImage and performs text recognition on it.
      * @param imageProxy The camera frame to analyze.
@@ -96,7 +121,7 @@ import java.util.concurrent.atomic.AtomicBoolean
     override fun analyze(imageProxy: ImageProxy) {
 
         val startTime = System.currentTimeMillis()
-        logger.debug { "FRAME analysis started at $startTime ms"}
+        logger.debug { "FRAME analysis started at $startTime ms" }
 
         if (isPaused.get()) {
             imageProxy.close()
@@ -106,16 +131,18 @@ import java.util.concurrent.atomic.AtomicBoolean
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+
             analyzeImageConcurrently(image)
+
         }
         val endTime = System.currentTimeMillis()
-        logger.debug { "FRAME analysis completed in ${endTime - startTime} ms"}
+        logger.debug { "FRAME analysis completed in ${endTime - startTime} ms" }
         imageProxy.close()
     }
 
     fun analyzeImageConcurrently(image: InputImage) {
         val startTime = System.currentTimeMillis()
-        logger.debug {"Concurrent image analysis started at $startTime ms"}
+        logger.debug { "Concurrent image analysis started at $startTime ms" }
 
         // Reset completion flags
         isTextProcessingComplete.set(false)
@@ -142,15 +169,15 @@ import java.util.concurrent.atomic.AtomicBoolean
                     }
 
                     val endTime = System.currentTimeMillis()
-                    logger.debug {"Concurrent image analysis completed in ${endTime - startTime} ms"}
+                    logger.debug { "Concurrent image analysis completed in ${endTime - startTime} ms" }
                 }
             } catch (e: Exception) {
-                logger.debug {"Error in concurrent processing: ${e.message}"}
+                logger.debug { "Error in concurrent processing: ${e.message}" }
             }
         }
     }
 
-// Added resource cleanup
+    // Added resource cleanup
 // Now we close ML Kit resources when we're done
 // This prevents memory leaks and makes our app run better
     // Cancel coroutines when the analyzer is no longer needed
@@ -166,33 +193,34 @@ import java.util.concurrent.atomic.AtomicBoolean
      * @param image The InputImage to process for text detection.
      * @return list of recognized text blocks
      */
-    private suspend fun recognizeTextConcurrently(image: InputImage): MutableList<String> = suspendCancellableCoroutine { continuation ->
-        val startTime = System.currentTimeMillis()
-        logger.debug {"Concurrent text recognition started at $startTime ms"}
+    private suspend fun recognizeTextConcurrently(image: InputImage): MutableList<String> =
+        suspendCancellableCoroutine { continuation ->
+            val startTime = System.currentTimeMillis()
+            logger.debug { "Concurrent text recognition started at $startTime ms" }
 // Created a local variable instead of directly using the class-level extractedFields variable
 // This approach works better with coroutines and makes our code more predictable when multiple things are happening at once
-        val localExtractedFields = mutableListOf<String>()
+            val localExtractedFields = mutableListOf<String>()
 
-        recognizer.process(image)
-            .addOnSuccessListener { visionText ->
-                val processingTime = System.currentTimeMillis() - startTime
-                logger.debug { "Concurrent text recognition success in $processingTime ms" }
+            recognizer.process(image)
+                .addOnSuccessListener { visionText ->
+                    val processingTime = System.currentTimeMillis() - startTime
+                    logger.debug { "Concurrent text recognition success in $processingTime ms" }
 // This line was deleted because isTextProcessingComplete is set to false at the beginning of our analysis process
 // and I don't think we should set it to false in the success handler
 //                isTextProcessingComplete = false
 
-                //docscanner stuff
-                if (detectPostalCode(visionText)) {
-                    isPaused.set(true)
-                    labelDetectedCallback.onLabelDetected()
-                }
+                    //docscanner stuff
+                    if (detectPostalCode(visionText)) {
+                        isPaused.set(true)
+                        labelDetectedCallback.onLabelDetected()
+                    }
 
-                Log.d("OCR", "Full detected text: ${visionText.text}")
+                    Log.d("OCR", "Full detected text: ${visionText.text}")
 
 //                // clear list of extracted fields from previous image
 //                extractedFields.clear()
 
-                // iterating through blocks/lines now deferred to the FieldExtractor
+                    // iterating through blocks/lines now deferred to the FieldExtractor
 //                for (block in visionText.textBlocks) {
 //
 //                    val boundingBox = block.boundingBox
@@ -215,108 +243,106 @@ import java.util.concurrent.atomic.AtomicBoolean
 //                    }
 //                }
 
-                val fieldExtractor = FieldExtractor(visionText.textBlocks)
-                localExtractedFields.addAll(fieldExtractor.extractAllFields())
+                    val fieldExtractor = FieldExtractor(visionText.textBlocks)
+                    localExtractedFields.addAll(fieldExtractor.extractAllFields())
 //                extractedFields = fieldExtractor.extractAllFields()
-                Log.d("OCR", localExtractedFields.toString())
+                    Log.d("OCR", localExtractedFields.toString())
 
-            }
-            .addOnFailureListener { e ->
-                Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
-                val processingTime = System.currentTimeMillis() - startTime
-                logger.debug {"TEXT recognition failed in $processingTime ms: ${e.localizedMessage}"}
+                }
+                .addOnFailureListener { e ->
+                    Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
+                    val processingTime = System.currentTimeMillis() - startTime
+                    logger.debug { "TEXT recognition failed in $processingTime ms: ${e.localizedMessage}" }
 // We still need to resume the continuation even when there's an error
 // This ensures our app continues running instead of getting stuck waiting forever
-                if (continuation.isActive) {
-                    continuation.resume(localExtractedFields)
+                    if (continuation.isActive) {
+                        continuation.resume(localExtractedFields)
+                    }
                 }
-            }
 
-            .addOnCompleteListener {
-                val processingTime = System.currentTimeMillis() - startTime
-                logger.debug {"TEXT recognition completed in $processingTime ms"}
-                // Mark text processing as complete
+                .addOnCompleteListener {
+                    val processingTime = System.currentTimeMillis() - startTime
+                    logger.debug { "TEXT recognition completed in $processingTime ms" }
+                    // Mark text processing as complete
 // Check if continuation.isActive before resuming to make sure the coroutine hasn't been cancelled
 // Then use continuation.resume() to return our results and continue execution
-                if (continuation.isActive) {
-                    continuation.resume(localExtractedFields)
+                    if (continuation.isActive) {
+                        continuation.resume(localExtractedFields)
+                    }
                 }
-            }
 // Since this func is using the suspendCancellableCoroutine pattern, the function's return value is provided through the continuation mechanism instead of a traditional return statement
-        // return extractedFields
+            // return extractedFields
 
 // Added cancellation handling
 // This makes sure resources are cleaned up if operations are cancelled
-        continuation.invokeOnCancellation {
-            logger.debug { "Text recognition cancelled" }
+            continuation.invokeOnCancellation {
+                logger.debug { "Text recognition cancelled" }
+            }
         }
-    }
 
     /**
      * Processes barcode scanning on the given InputImage.
      */
-    private suspend fun processBarcodeConcurrently(image: InputImage): String = suspendCancellableCoroutine { continuation ->
-        val startTime = System.currentTimeMillis()
-        logger.debug {"BARCODE processing started at $startTime ms"}
+    private suspend fun processBarcodeConcurrently(image: InputImage): String =
+        suspendCancellableCoroutine { continuation ->
+            val startTime = System.currentTimeMillis()
+            logger.debug { "BARCODE processing started at $startTime ms" }
 
-        var localBarcodeValue = ""
+            var localBarcodeValue = ""
 
-        if (isBarcodeProcessing.getAndSet(true)) {
-            Log.d("Barcode","Barcode  processing already in progress; skipping this frame.")
-            continuation.resume("")
-            return@suspendCancellableCoroutine
-        }
+            if (isBarcodeProcessing.getAndSet(true)) {
+                Log.d("Barcode", "Barcode  processing already in progress; skipping this frame.")
+                continuation.resume("")
+                return@suspendCancellableCoroutine
+            }
 //        isBarcodeProcessing = true
-        barcodeScanner.process(image)
-            .addOnSuccessListener { barcodes ->
-                val processingTime = System.currentTimeMillis() - startTime
-                logger.debug { "Concurrent barcode processing success in $processingTime ms" }
+            barcodeScanner.process(image)
+                .addOnSuccessListener { barcodes ->
+                    val processingTime = System.currentTimeMillis() - startTime
+                    logger.debug { "Concurrent barcode processing success in $processingTime ms" }
 
 //                barcodeValue = ""
-                if (barcodes.isNotEmpty()) {
-                    for (barcode in barcodes) {
-                        localBarcodeValue = barcode.displayValue ?: ""
-                        Log.d("Barcode", "Detected barcode: $localBarcodeValue")
-                        break;
+                    if (barcodes.isNotEmpty()) {
+                        for (barcode in barcodes) {
+                            localBarcodeValue = barcode.displayValue ?: ""
+                            Log.d("Barcode", "Detected barcode: $localBarcodeValue")
+                            break;
+                        }
+                    } else {
+                        Log.d("Barcode", "No barcode detected in this frame.")
                     }
-                } else {
-                    Log.d("Barcode", "No barcode detected in this frame.")
-                }
 
-            }
-            .addOnFailureListener { e ->
-                Log.e("Barcode", "Barcode scanning failed: ${e.localizedMessage}", e)
-                val processingTime = System.currentTimeMillis() - startTime
-                logger.debug {"BARCODE processing failed in $processingTime ms: ${e.localizedMessage}"}
-            }
-            .addOnCompleteListener {
-                val processingTime = System.currentTimeMillis() - startTime
-                logger.debug {"BARCODE processing completed in $processingTime ms"}
-                isBarcodeProcessing.set(false)
-                isBarcodeProcessingComplete.set(true)
-                if (continuation.isActive) {
-                    continuation.resume(localBarcodeValue)
                 }
+                .addOnFailureListener { e ->
+                    Log.e("Barcode", "Barcode scanning failed: ${e.localizedMessage}", e)
+                    val processingTime = System.currentTimeMillis() - startTime
+                    logger.debug { "BARCODE processing failed in $processingTime ms: ${e.localizedMessage}" }
+                }
+                .addOnCompleteListener {
+                    val processingTime = System.currentTimeMillis() - startTime
+                    logger.debug { "BARCODE processing completed in $processingTime ms" }
+                    isBarcodeProcessing.set(false)
+                    isBarcodeProcessingComplete.set(true)
+                    if (continuation.isActive) {
+                        continuation.resume(localBarcodeValue)
+                    }
 //                // Reset flag so next frame can trigger barcode scanning
 //                isBarcodeProcessing = false
 //
 //                // Mark barcode processing as complete
 //                isBarcodeProcessingComplete = true
+                }
+            continuation.invokeOnCancellation {
+                isBarcodeProcessing.set(false)
+                logger.debug { "Barcode processing cancelled" }
             }
-        continuation.invokeOnCancellation {
-            isBarcodeProcessing.set(false)
-            logger.debug { "Barcode processing cancelled" }
         }
-    }
 
     /**
-     * Updates the UI with the recognized text and barcode value.
-     * This method ensures that UI updates are performed on the main thread
-     * by using the `post` method of the root view. It first clears any previous
-     * content in the `textView`, then appends each recognized text block followed
-     * by the barcode value if both text and barcode processing are complete.
+     * Updates the UI with the extracted label data.
      */
     fun outputToUI() {
+
         // Ensure that UI updates run on the main thread
         //bindingMain.root.post {
         //bindingMain.textView.text = ""
@@ -325,17 +351,17 @@ import java.util.concurrent.atomic.AtomicBoolean
         // Only proceed if both processing steps are complete
         if (!isTextProcessingComplete.get() || !isBarcodeProcessingComplete.get()) {
             return
-        }
 
-        var text = ""
-        for (field in extractedFields) {
-            //bindingMain.textView.append(field)
-            //bindingMain.textView.append("\n")
-            text += field + "\n"
+            var text = ""
+            for (field in extractedFields) {
+                //bindingMain.textView.append(field)
+                //bindingMain.textView.append("\n")
+                text += field + "\n"
+            }
+            //bindingMain.textView.append("Barcode: $barcodeValue")
+            text += "Barcode: $barcodeValue"
+            listener.onSuccess(text)
         }
-        //bindingMain.textView.append("Barcode: $barcodeValue")
-        text += "Barcode: $barcodeValue"
-        listener.onSuccess(text)
     }
 
     /**
@@ -384,7 +410,7 @@ import java.util.concurrent.atomic.AtomicBoolean
      * A helper method to process detected text blocks, lines, and elements for further use.
      * @param result The recognized text result from ML Kit.
      */
-    private fun processTextBlock(result: Text) {
+    fun processTextBlock(result: Text) {
         // process text block
         val resultText = result.text
         for (block in result.textBlocks) {
@@ -405,13 +431,15 @@ import java.util.concurrent.atomic.AtomicBoolean
 
     }
 
-    private fun getTextRecognizer(): TextRecognizer {
+    fun getTextRecognizer(): TextRecognizer {
 
         return TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
     }
 
+
     fun detectPostalCode(visionText: Text): Boolean {
+
         val postalCodeRegex = Regex("[A-Za-z]\\d[A-Za-z]\\s?\\d[A-Za-z]\\d")
         // Iterate over all text blocks, lines, or elements
         for (block in visionText.textBlocks) {
@@ -434,6 +462,19 @@ import java.util.concurrent.atomic.AtomicBoolean
 //        }
 //    }
 
+    fun createLabelJSON() {
+        labelJSON = LabelJSON(
+            fieldExtractor.getProductType(),
+            fieldExtractor.getToAddress(),
+            fieldExtractor.getDestPostalCode(),
+            fieldExtractor.getTrackPin(),
+            barcodeValue,
+            fieldExtractor.getFromAddress(),
+            fieldExtractor.getProductDimension(),
+            fieldExtractor.getProductWeight(),
+            fieldExtractor.getProductInstruction(),
+            fieldExtractor.getReference()
+        )
 
-
+    }
 }

@@ -4,8 +4,7 @@ import android.util.Log
 import com.google.mlkit.vision.text.Text.TextBlock
 
 class FieldExtractor(
-    private var scannedTextBlocks: List<TextBlock>,
-
+    private var scannedTextBlocks: List<TextBlock>
 ) {
 
     // String variables to store the extract field, matching JSON field requirements
@@ -26,15 +25,42 @@ class FieldExtractor(
     // lists of keywords or Regex useful to find required fields when parsing the scanned label text
     // these can be tweaked as required to improve field retrieval
     private val productTypes = listOf("Priority", "Regular Parcel", "Xpresspost", "Expedited Parcel")
-    private val toAddressHeaderRegex = Regex("TO.*[AÀ]", RegexOption.IGNORE_CASE)
+    private val toAddressHeaderRegex = Regex("TO.*[AÀÅ]", RegexOption.IGNORE_CASE)
     // note: added the letter 'O' to the matcher for digits, since OCR recognizer often reads a 0 as O
     private val postalCodeRegex = Regex("""[a-zA-Z][O0-9][a-zA-Z][\\ \\-]{0,1}[O0-9][a-zA-Z][O0-9]""")
     private val trackPinRegex = Regex("""\d\d\d\d\s\d\d\d\d\s\d\d\d\d\s\d\d\d\d""")
     private val fromAddressHeaderRegex = Regex("FROM.*DE", RegexOption.IGNORE_CASE)
     private val productDimensionRegex = Regex("""\d*x\d*x\d*cm""")
     private val productWeightRegex = Regex("KG")
+    private val productWeightValueRegex = Regex("""\d*[.]\d\d\d""")
     private val productInstructions = listOf("SIGNATURE", "18+ SIGNATURE", "19+ SIGNATURE", "21+ SIGNATURE", "CARD FOR PICKUP", "DELIVER TO PO", "LEAVE AT THE DOOR", "DO NOT SAFE DROP")
     private val referenceRegex = Regex("Ref.*R[eé]f", RegexOption.IGNORE_CASE)
+
+    // variable holding the index of the found fields
+    private var foundProductTypeIndex = -1
+    private var foundToAddressHeaderBlockIndex = -1
+    private var foundToAddressHeaderLineIndex = -1
+    private var foundPostalCodeIndex = -1
+    private var foundTrackPinIndex = -1
+    private var foundFromAddressHeaderBlockIndex = -1
+    private var foundFromAddressHeaderLineIndex = -1
+    private var foundProductDimensionIndex = -1
+    private var foundProductWeightIndex = -1
+    private var foundProductInstructionIndex = -1
+    private var foundReferenceIndex = -1
+
+
+    // All getters for private fields
+    fun getProductType(): String {return productType}
+    fun getToAddress(): String {return toAddress}
+    fun getDestPostalCode(): String {return destPostalCode}
+    fun getTrackPin(): String {return trackPin}
+    fun getFromAddress(): String {return fromAddress}
+    fun getProductDimension(): String {return productDimension}
+    fun getProductWeight(): String {return productWeight}
+    fun getProductInstruction(): String {return productInstruction}
+    fun getReference(): String {return reference}
+
 
     /**
      * Sole public function for this class, when called it sorts the instance's list of text
@@ -43,13 +69,17 @@ class FieldExtractor(
      */
     fun extractAllFields() : MutableList<String> {
         if (scannedTextBlocks.isNotEmpty()) {
+            // sort all text blocks
             cleanScannedText = sortScannedTextBlocks(scannedTextBlocks)
 
+            // parse all text blocks to find each field reference index
+            findAllFieldPositions()
+
+            // extract each field using their found reference position
             productType = extractProductType()
             toAddress = extractToAddress()
             destPostalCode = extractDestPostalCode()
             trackPin = extractTrackPin()
-            // extractFromAddress() needs to be fixed before enabling, to prevent app crashing
             fromAddress = extractFromAddress()
             productDimension = extractProductDimension()
             productWeight = extractProductWeight()
@@ -102,11 +132,68 @@ class FieldExtractor(
         return sortedBlock
     }
 
+    private fun findAllFieldPositions() {
+        // parsing through all text blocks to find positions of header or actual field
+        // instead of parsing through all blocks in each field extraction methods
+        for (block in cleanScannedText) {
+            for (line in block) {
+                // some fields are expected to be in single-line blocks
+                if (block.size == 1) {
+                    if (foundPostalCodeIndex < 0 && line.contains(postalCodeRegex)) {
+                        foundPostalCodeIndex = cleanScannedText.indexOf(block)
+                    }
+                    else if (foundTrackPinIndex < 0 && line.contains(trackPinRegex)) {
+                        foundTrackPinIndex = cleanScannedText.indexOf(block)
+                    }
+                    else if (foundProductDimensionIndex < 0 && line.contains(productDimensionRegex)) {
+                        foundProductDimensionIndex = cleanScannedText.indexOf(block)
+                    }
+                }
+
+                if (foundProductTypeIndex < 0) {
+                    for (productType in productTypes) {
+                        if (line.contains(productType)) {
+                            foundProductTypeIndex = cleanScannedText.indexOf(block)
+                            break
+                        }
+                    }
+                }
+
+                if (foundToAddressHeaderBlockIndex < 0 && line.contains(toAddressHeaderRegex)) {
+                    foundToAddressHeaderBlockIndex = cleanScannedText.indexOf(block)
+                    foundToAddressHeaderLineIndex = block.indexOf(line)
+                }
+
+                if (foundFromAddressHeaderBlockIndex < 0 && line.contains(fromAddressHeaderRegex)) {
+                    foundFromAddressHeaderBlockIndex = cleanScannedText.indexOf(block)
+                    foundFromAddressHeaderLineIndex = block.indexOf(line)
+                }
+
+                if (foundProductWeightIndex < 0 && line.contains(productWeightRegex)) {
+                    foundProductWeightIndex = cleanScannedText.indexOf(block)
+                }
+
+                if (foundProductInstructionIndex < 0) {
+                    for (instruction in productInstructions) {
+                        if (line.equals(instruction, true)) {
+                            foundProductInstructionIndex = cleanScannedText.indexOf(block)
+                            break
+                        }
+                    }
+                }
+
+                if (foundReferenceIndex < 0 && line.contains(referenceRegex)) {
+                    foundReferenceIndex = cleanScannedText.indexOf(block)
+                }
+            }
+        }
+    }
+
     private fun extractProductType() : String {
         var extractedProductType = ""
 
-        for (block in cleanScannedText) {
-            for (line in block) {
+        if (foundProductTypeIndex >= 0) {
+            for (line in cleanScannedText[foundProductTypeIndex]) {
                 for (productType in productTypes) {
                     if (line.contains(productType)) {
                         extractedProductType = productType
@@ -123,19 +210,6 @@ class FieldExtractor(
     private fun extractToAddress() : String {
         var extractedToAddress = ""
 
-        var foundToAddressHeaderBlockIndex = -1
-        var foundToAddressHeaderLineIndex = -1
-        for (block in cleanScannedText) {
-            for (line in block) {
-                if (line.contains(toAddressHeaderRegex)) {
-                    foundToAddressHeaderBlockIndex = cleanScannedText.indexOf(block)
-                    foundToAddressHeaderLineIndex = block.indexOf(line)
-                    Log.d("OCR", "foundToAddressHeaderLineIndex = ${foundToAddressHeaderLineIndex}")
-                    break
-                }
-            }
-        }
-
         if(foundToAddressHeaderBlockIndex>=0) {
             // making sure we include 'to address' details if embedded in same block as
             // the header, by extracting any remaining lines the header block
@@ -148,15 +222,37 @@ class FieldExtractor(
             var nextBlockIndex = foundToAddressHeaderBlockIndex + 1
 
             // continue until postal code was found so we get complete address
-            while (nextBlockIndex < cleanScannedText.size && !extractedToAddress.contains(postalCodeRegex)) {
+            var blockIsAddressRelated = true
+            while (nextBlockIndex < cleanScannedText.size &&
+                    !extractedToAddress.contains(postalCodeRegex) &&
+                    blockIsAddressRelated) {
                 for (line in cleanScannedText[nextBlockIndex]) {
-                    extractedToAddress += "${line}, "
+                    // sometimes postal code in address is not recognized properly,
+                    // i.e. digit read as character, so loop continues through next blocks
+                    // so adding check to make sure the product instruction (ie '18+ SIGNATURE')
+                    // which is the next block after 'to address' does not slip into the extracted address
+                    for (instruction in productInstructions) {
+                        if (line.equals(instruction, true)) {
+                            blockIsAddressRelated = false
+                            break
+                        }
+                    }
+                    if (blockIsAddressRelated) {
+                        extractedToAddress += "${line}, "
+                    }
+                    else {
+                        break
+                    }
                 }
                 nextBlockIndex += 1
             }
 
         }
 
+        // clean up by removing last comma
+        if (extractedToAddress.endsWith(", ")) {
+            extractedToAddress = extractedToAddress.substringBeforeLast(",")
+        }
         extractedFields.add("toAddress: $extractedToAddress")
         return extractedToAddress
     }
@@ -165,11 +261,8 @@ class FieldExtractor(
     private fun extractDestPostalCode(): String {
         var extractedDestPostalCode = ""
 
-        for (block in cleanScannedText) {
-            if (block.size == 1) {
-                if (block[0].contains(postalCodeRegex))
-                    extractedDestPostalCode = block[0]
-            }
+        if (foundPostalCodeIndex >= 0) {
+            extractedDestPostalCode = cleanScannedText[foundPostalCodeIndex][0]
         }
 
         extractedFields.add("destPostalCode: $extractedDestPostalCode")
@@ -180,10 +273,14 @@ class FieldExtractor(
     private fun extractTrackPin(): String {
         var extractedTrackPin = ""
 
-        for (block in cleanScannedText) {
-            if (block.size == 1) {
-                if (block[0].contains(trackPinRegex))
-                    extractedTrackPin = block[0]
+        if (foundTrackPinIndex >= 0) {
+            val trackPinBlock = cleanScannedText[foundTrackPinIndex]
+            // sometimes found block will be the 'PIN/NIP:' near bottom of label
+            if (trackPinBlock[0].contains(":")) {
+                extractedTrackPin = trackPinBlock[0].substringAfterLast(":")
+            }
+            else {
+                extractedTrackPin = trackPinBlock[0]
             }
         }
 
@@ -192,21 +289,8 @@ class FieldExtractor(
 
     }
 
-    // TODO fix this function, makes the app crash (maybe out-of-bound index or infinite looping)
     private fun extractFromAddress() : String {
         var extractedFromAddress = ""
-
-        var foundFromAddressHeaderBlockIndex = -1
-        var foundFromAddressHeaderLineIndex = -1
-        for (block in cleanScannedText) {
-            for (line in block) {
-                if (line.contains(fromAddressHeaderRegex)) {
-                    foundFromAddressHeaderBlockIndex = cleanScannedText.indexOf(block)
-                    foundFromAddressHeaderLineIndex = block.indexOf(line)
-                    break
-                }
-            }
-        }
 
         if(foundFromAddressHeaderBlockIndex>=0) {
             // making sure we include 'from address' details if embedded in same block as
@@ -226,7 +310,10 @@ class FieldExtractor(
                 // is required
                 var isAddressRelated = true
                 for (line in cleanScannedText[nextBlockIndex]) {
-                    if (line.contains(productDimensionRegex) || line.contains(productWeightRegex) || line.contains("MANIFEST", true)) {
+                    if (line.contains(productDimensionRegex) ||
+                        line.contains(productWeightRegex) ||
+                        line.contains(productWeightValueRegex) ||
+                        line.contains("MANIFEST", true)) {
                         isAddressRelated = false
                         break
                     }
@@ -242,6 +329,10 @@ class FieldExtractor(
 
         }
 
+        // clean up by removing last comma
+        if (extractedFromAddress.endsWith(", ")) {
+            extractedFromAddress = extractedFromAddress.substringBeforeLast(",")
+        }
         extractedFields.add("fromAddress: $extractedFromAddress")
         return extractedFromAddress
     }
@@ -249,11 +340,8 @@ class FieldExtractor(
     private fun extractProductDimension(): String {
         var extractedProductDimension = ""
 
-        for (block in cleanScannedText) {
-            if (block.size == 1) {
-                if (block[0].contains(productDimensionRegex))
-                    extractedProductDimension = block[0]
-            }
+        if (foundProductDimensionIndex >= 0) {
+            extractedProductDimension = cleanScannedText[foundProductDimensionIndex][0]
         }
 
         extractedFields.add("productDimension: $extractedProductDimension")
@@ -263,19 +351,29 @@ class FieldExtractor(
     private fun extractProductWeight(): String {
         var extractedProductWeight = ""
 
-        var foundProductWeightBlockIndex = -1
-        for (block in cleanScannedText) {
-            for (line in block) {
-                if (line.contains(productWeightRegex)) {
-                    foundProductWeightBlockIndex = cleanScannedText.indexOf(block)
-                    break
-                }
+        if(foundProductWeightIndex>=0) {
+            val productWeightBlock = cleanScannedText[foundProductWeightIndex]
+            // first line of block is usually weight value, but sometimes the value is
+            // in a previous block, so checking that first line does not contain 'kg'
+            if (!productWeightBlock[0].contains(productWeightRegex)) {
+                extractedProductWeight = productWeightBlock[0]
             }
-        }
+            // check previous block and make sure it's not the product dimensions or 'from/to' header
+            else if (!cleanScannedText[foundProductWeightIndex - 1][0].contains(productDimensionRegex) &&
+                        !cleanScannedText[foundProductWeightIndex - 1][0].contains(fromAddressHeaderRegex)){
+                extractedProductWeight = cleanScannedText[foundProductWeightIndex - 1][0]
 
-        if(foundProductWeightBlockIndex>=0) {
-            // assuming weight value always the first line in that block
-            extractedProductWeight = cleanScannedText[foundProductWeightBlockIndex][0]
+            }
+            // check 2nd previous block and make sure it's not the product dimensions or 'from/to' header
+            else if (!cleanScannedText[foundProductWeightIndex - 2][0].contains(productDimensionRegex) &&
+                !cleanScannedText[foundProductWeightIndex - 2][0].contains(fromAddressHeaderRegex)){
+                extractedProductWeight = cleanScannedText[foundProductWeightIndex - 2][0]
+
+            }
+            // lastly, assume that the product weight value is the 3rd previous block
+            else {
+                extractedProductWeight = cleanScannedText[foundProductWeightIndex - 3][0]
+            }
         }
 
         extractedFields.add("productWeight: ${extractedProductWeight}kg")
@@ -285,8 +383,8 @@ class FieldExtractor(
     private fun extractProductInstruction(): String {
         var extractedProductInstruction = ""
 
-        for (block in cleanScannedText) {
-            for (line in block) {
+        if (foundProductInstructionIndex >= 0) {
+            for (line in cleanScannedText[foundProductInstructionIndex]) {
                 for (instruction in productInstructions) {
                     if (line.equals(instruction, true)) {
                         extractedProductInstruction = instruction
@@ -303,8 +401,8 @@ class FieldExtractor(
     private fun extractReference(): String {
         var extractedReference = ""
 
-        for (block in cleanScannedText) {
-            for (line in block) {
+        if (foundReferenceIndex >= 0) {
+            for (line in cleanScannedText[foundReferenceIndex]) {
                 if (line.contains(referenceRegex)) {
                     extractedReference = line.substringAfterLast(":")
                     break
