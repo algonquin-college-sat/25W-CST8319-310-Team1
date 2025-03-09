@@ -74,4 +74,22 @@ data class LabelJSON(
         this.reference = reference
     }
 
+    override fun toString() : String {
+        var string = ""
+        string += "{\n"
+        string += "\tproductType: ${productType}\n"
+        string += "\ttoAddress: ${toAddress}\n"
+        string += "\tdestPostalCode: ${destPostalCode}\n"
+        string += "\ttrackPin: ${trackPin}\n"
+        string += "\tbarCode: ${barCode}\n"
+        string += "\tfromAddress: ${fromAddress}\n"
+        string += "\tproductDimension: ${productDimension}\n"
+        string += "\tproductWeight: ${productWeight}kg\n"
+        string += "\tproductInstruction: ${productInstruction}\n"
+        string += "\treference: ${reference}\n"
+        string += "}"
+
+        return string
+    }
+
 }
