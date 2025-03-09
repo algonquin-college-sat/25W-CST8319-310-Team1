@@ -73,7 +73,7 @@ import java.io.File
                         Log.d("DocScanner", "JPEG page $index => $imageUri")
                         val scannedImage = InputImage.fromFilePath(this,imageUri)
 
-                        imageAnalyzer.analyzeImage(scannedImage)
+                        imageAnalyzer.analyzeImageConcurrently(scannedImage)
 
                         android.os.Handler(Looper.getMainLooper()).postDelayed({
                             displayResults(imageUri, imageAnalyzer.extractedFields, imageAnalyzer.barcodeValue)
@@ -234,7 +234,7 @@ import java.io.File
 
     override fun onDestroy() {
         super.onDestroy()
-        cameraExecutor.shutdown()
+        imageAnalyzer.shutdown()
     }
 
     override fun onSuccess(result: String) {
