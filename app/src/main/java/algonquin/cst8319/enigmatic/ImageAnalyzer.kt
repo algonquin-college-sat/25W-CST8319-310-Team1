@@ -15,14 +15,18 @@ import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.ExecutorService
 
 
 @ExperimentalGetImage class ImageAnalyzer(private var bindingMain: ActivityMainBinding,
                                           private val labelDetectedCallback: LabelDetectedCallback,
                                           private val listener: ImageAnalyzerListener) : ImageAnalysis.Analyzer {
+
     // ML Kit's TextRecognizer instance, used for detecting text in images
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+    private val logger = KotlinLogging.logger {}
 
     // interface for Activity
     interface LabelDetectedCallback {
@@ -69,6 +73,10 @@ import java.util.concurrent.ExecutorService
      * @param imageProxy The camera frame to analyze.
      */
     override fun analyze(imageProxy: ImageProxy) {
+
+        val startTime = System.currentTimeMillis()
+        logger.debug { "FRAME analysis started at $startTime ms"}
+
         if (isPaused) {
             imageProxy.close()
             return
@@ -96,6 +104,8 @@ import java.util.concurrent.ExecutorService
 //                Thread.sleep(1000)
 //            imageProxy.close()
         }
+        val endTime = System.currentTimeMillis()
+        logger.debug { "FRAME analysis completed in ${endTime - startTime} ms"}
         imageProxy.close()
     }
 
@@ -105,6 +115,10 @@ import java.util.concurrent.ExecutorService
      * @return list of recognized text blocks
      */
     private fun recognizeText(image: InputImage): MutableList<String> {
+
+        val startTime = System.currentTimeMillis()
+        logger.debug {"TEXT recognition started at $startTime ms"}
+
         this.recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
         val result = recognizer.process(image)
@@ -156,8 +170,12 @@ import java.util.concurrent.ExecutorService
             }
             .addOnFailureListener { e ->
                 //Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
+                val processingTime = System.currentTimeMillis() - startTime
+                logger.debug {"TEXT recognition failed in $processingTime ms: ${e.localizedMessage}"}
             }
             .addOnCompleteListener {
+                val processingTime = System.currentTimeMillis() - startTime
+                logger.debug {"TEXT recognition completed in $processingTime ms"}
                 // Mark text processing as complete
                 isTextProcessingComplete = true
             }
@@ -170,13 +188,18 @@ import java.util.concurrent.ExecutorService
      * Processes barcode scanning on the given InputImage.
      */
     private fun processBarcode(image: InputImage) {
+        val startTime = System.currentTimeMillis()
+        logger.debug {"BARCODE processing started at $startTime ms"}
+
         if (isBarcodeProcessing) {
-            Log.d("Barcode", "Barcode processing already in progress; skipping this frame.")
+            logger.debug {"BARCODE  processing already in progress; skipping this frame."}
             return
         }
         isBarcodeProcessing = true
         barcodeScanner.process(image)
             .addOnSuccessListener { barcodes ->
+                val processingTime = System.currentTimeMillis() - startTime
+                Log.d(TAG, "Barcode processing success in $processingTime ms")
                 barcodeValue = ""
                 if (barcodes.isNotEmpty()) {
                     for (barcode in barcodes) {
@@ -190,8 +213,13 @@ import java.util.concurrent.ExecutorService
             }
             .addOnFailureListener { e ->
                 //Log.e("Barcode", "Barcode scanning failed: ${e.localizedMessage}", e)
+                val processingTime = System.currentTimeMillis() - startTime
+                logger.debug {"BARCODE processing failed in $processingTime ms: ${e.localizedMessage}"}
             }
             .addOnCompleteListener {
+                val processingTime = System.currentTimeMillis() - startTime
+                logger.debug {"BARCODE processing completed in $processingTime ms"}
+
                 // Reset flag so next frame can trigger barcode scanning
                 isBarcodeProcessing = false
 
@@ -311,6 +339,9 @@ import java.util.concurrent.ExecutorService
     }
 
     fun analyzeImage (image: InputImage) {
+        val startTime = System.currentTimeMillis()
+        logger.debug {"Image analysis started at $startTime ms"}
+
         recognizeText(image)
         processBarcode(image)
 
@@ -319,7 +350,8 @@ import java.util.concurrent.ExecutorService
                 outputToUI()
             }
         }
-
+        val endTime = System.currentTimeMillis()
+        logger.debug { "Image analysis completed in ${endTime - startTime} ms"}
     }
 
 

@@ -29,6 +29,7 @@ import android.widget.TextView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import java.io.File
 
 @ExperimentalGetImage class MainActivity : AppCompatActivity(), ImageAnalyzer.LabelDetectedCallback, ImageAnalyzerListener {
     private lateinit var cameraExecutor: ExecutorService
@@ -85,6 +86,10 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val logDir = File("/sdcard/Android/data/algonquin.cst8319.enigmatic/files/logs")
+        if (!logDir.exists()) {
+            logDir.mkdirs()
+        }
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

@@ -59,6 +59,11 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
+    implementation("io.github.microutils:kotlin-logging:3.0.5")
+    implementation("org.slf4j:slf4j-api:2.0.9")
+    implementation("com.github.tony19:logback-android:3.0.0")
+    implementation("io.github.oshai:kotlin-logging-android:5.0.2")
+
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
 
     implementation ("com.google.android.material:material:1.11.0")
