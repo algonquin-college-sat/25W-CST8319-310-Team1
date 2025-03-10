@@ -26,18 +26,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/bottom_sheet_background"
-        android:elevation="16dp"
-        android:padding="8dp"
+        android:elevation="8dp"
+
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/space">
 
         <TextView
             android:id="@+id/bottom_sheet_header"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif"
             android:gravity="center"
             android:text="Label Information"
             android:textAlignment="center"
-            android:textColor="?attr/colorOnPrimary"
+            android:textColor="?attr/colorOnSecondary"
             android:textSize="24sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -46,15 +49,18 @@
         <TextView
             android:id="@+id/textView"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
             android:background="@drawable/output_textview_background"
             android:fadeScrollbars="false"
             android:padding="8dp"
             android:scrollbarAlwaysDrawVerticalTrack="true"
             android:scrollbars="vertical"
-            android:text="LAt vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat."
-            android:textColor="?attr/colorOnPrimary"
+            android:text="&quot;ProductType&quot;: &quot;Priority&quot;&#10;&quot;ToAddress&quot;: &quot;Julie Tester DJ, 4811 Churchill Place, Laval, QC, H7W 4H4&quot;&#10;&quot;DestPostalCode&quot;: &quot;H7W 4H4&quot;&#10;&quot;TrackPin&quot;: &quot;7023 2102 3528 2700&quot;&#10;&quot;BarCode&quot;: &quot;PHWH7447023210235282270000200&quot;&#10;&quot;FromAddress&quot;: &quot;IIQA CUST DO NOT USE - 005, 2 SAINTE-CATHERINE ST East, MONTREAL QC H2X&quot;&#10;&quot;ProductDimension&quot;: &quot;33x33x33cm&quot;&#10;&quot;ProductWeight&quot;: &quot;7.190kg&quot;&#10;&quot;ProductInstruction&quot;: &quot;MANIFESTREQ&quot;&#10;&quot;Reference&quot;: &quot;QC-DJ002&quot;"
+
+            android:textColor="?attr/colorOnSecondary"
             android:verticalScrollbarPosition="right"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
@@ -67,12 +73,33 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
             android:contentDescription=""
             android:text="Close"
-            android:theme="@style/Theme.Material3.DayNight"
+            android:textColor="?attr/colorOnPrimary"
+            android:theme="@style/Base.Theme.enigmatic_ocr"
+            app:backgroundTint="?attr/colorPrimary"
             app:icon="@drawable/close_24"
+            app:iconTint="?attr/colorOnPrimary"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textView" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="@style/Widget.AppCompat.ProgressBar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:indeterminate="true"
+            android:indeterminateTint="?attr/colorPrimary"
+            android:progressTint="#9C27B0"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="@+id/bottom_sheet_header"
+            app:layout_constraintStart_toEndOf="@+id/bottom_sheet_header"
+            app:layout_constraintTop_toTopOf="@+id/bottom_sheet_header" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
