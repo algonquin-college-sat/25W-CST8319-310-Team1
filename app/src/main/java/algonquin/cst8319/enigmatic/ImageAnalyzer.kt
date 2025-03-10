@@ -23,9 +23,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 
 
-@ExperimentalGetImage class ImageAnalyzer(private var bindingMain: ActivityMainBinding,
-                                          private val labelDetectedCallback: ImageAnalyzer.LabelDetectedCallback,
-                                          private val listener: ImageAnalyzerListener) : ImageAnalysis.Analyzer {
+@ExperimentalGetImage class ImageAnalyzer(
+    private val labelDetectedCallback: LabelDetectedCallback,
+    private val listener: ImageAnalyzerListener
+) : ImageAnalysis.Analyzer {
 
     // FieldExtractor instance - initialized in recognizeText method
     private lateinit var fieldExtractor: FieldExtractor
