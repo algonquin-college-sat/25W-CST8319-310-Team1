@@ -74,8 +74,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 //    var isPaused = false
 
     // Results - data structures to store recognized text blocks and barcode value
-    var barcodeValue = ""
-    var extractedFields = mutableListOf<String>()
+    private var barcodeValue = ""
+    private var extractedFields = mutableListOf<String>()
     private lateinit var labelJSON: LabelJSON
     // Status flags
 //    private var isTextProcessingComplete = false
@@ -101,15 +101,9 @@ import java.util.concurrent.atomic.AtomicBoolean
         val imageAnalyzer = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) // Keeps only the latest frame
             .build().apply {
-
-// Changed from using a lambda to directly using this class
-                setAnalyzer(cameraExecutor, this@ImageAnalyzer)
-//                setAnalyzer(cameraExecutor) { imageProxy ->
-//                    analyze(imageProxy) // Send the frame to ML Kit
-//                    // the closing of the image proxy was moved to the analyze() function below
-//                    // imageProxy.close()
-//                }
-
+                setAnalyzer(cameraExecutor) { imageProxy ->
+                    analyze(imageProxy) // Send the frame to ML Kit
+                }
             }
         return imageAnalyzer
     }
@@ -244,7 +238,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 //                    }
 //                }
 
-                    val fieldExtractor = FieldExtractor(visionText.textBlocks)
+                    fieldExtractor = FieldExtractor(visionText.textBlocks)
                     localExtractedFields.addAll(fieldExtractor.extractAllFields())
 //                extractedFields = fieldExtractor.extractAllFields()
                     Log.d("OCR", localExtractedFields.toString())
@@ -353,7 +347,7 @@ import java.util.concurrent.atomic.AtomicBoolean
         // Only proceed if both processing steps are complete
         if (!isTextProcessingComplete.get() || !isBarcodeProcessingComplete.get()) {
             return
-
+        }
             var text = ""
             for (field in extractedFields) {
                 //bindingMain.textView.append(field)
@@ -363,7 +357,7 @@ import java.util.concurrent.atomic.AtomicBoolean
             //bindingMain.textView.append("Barcode: $barcodeValue")
             text += "Barcode: $barcodeValue"
             listener.onSuccess(text)
-        }
+
     }
 
     /**
