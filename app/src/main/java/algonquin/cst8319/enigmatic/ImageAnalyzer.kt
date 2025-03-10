@@ -264,6 +264,7 @@ import java.util.concurrent.atomic.AtomicBoolean
                     val processingTime = System.currentTimeMillis() - startTime
                     logger.debug { "TEXT recognition completed in $processingTime ms" }
                     // Mark text processing as complete
+                    isTextProcessingComplete.set(true)
 // Check if continuation.isActive before resuming to make sure the coroutine hasn't been cancelled
 // Then use continuation.resume() to return our results and continue execution
                     if (continuation.isActive) {
