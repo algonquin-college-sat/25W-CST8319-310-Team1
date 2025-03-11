@@ -27,6 +27,7 @@ import android.text.method.ScrollingMovementMethod
 import android.widget.TextView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import java.io.File
 
 @ExperimentalGetImage class MainActivity : AppCompatActivity(), ImageAnalyzer.LabelDetectedCallback, ImageAnalyzerListener {
 
@@ -71,7 +72,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
                         Log.d("DocScanner", "JPEG page $index => $imageUri")
                         val scannedImage = InputImage.fromFilePath(this,imageUri)
 
-                        imageAnalyzer.analyzeImage(scannedImage)
+                        imageAnalyzer.analyzeImageConcurrently(scannedImage)
 
                         android.os.Handler(Looper.getMainLooper()).postDelayed({
                             // create labelJSON
@@ -90,6 +91,10 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val logDir = File("/sdcard/Android/data/algonquin.cst8319.enigmatic/files/logs")
+        if (!logDir.exists()) {
+            logDir.mkdirs()
+        }
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -221,7 +226,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
     override fun onDestroy() {
         super.onDestroy()
-        cameraExecutor.shutdown()
+        imageAnalyzer.shutdown()
     }
 
     override fun onSuccess(result: String) {
