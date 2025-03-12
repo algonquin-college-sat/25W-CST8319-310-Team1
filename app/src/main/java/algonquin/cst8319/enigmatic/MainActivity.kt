@@ -24,7 +24,13 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import android.text.method.ScrollingMovementMethod
+import android.widget.EditText
 import android.widget.TextView
+import androidx.activity.viewModels
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 
@@ -42,6 +48,8 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
     private lateinit var bottomSheet: View
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
+
+    private val viewModel: TextViewModel by viewModels<TextViewModel>()
 
     //docScanner stuff
     private val documentScannerOptions = GmsDocumentScannerOptions.Builder()
@@ -106,6 +114,15 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
         textView.movementMethod = ScrollingMovementMethod()
         bottomSheetHeader.text = "Scanning"
+
+        // Create the observer which updates the UI.
+        val textObserver = Observer<String> { newName ->
+            // Update the UI, in this case, a TextView.
+            textView.text = newName
+        }
+
+        // Observe the LiveData, passing in this activity as the LifecycleOwner and the observer.
+        viewModel.currentText.observe(this, textObserver)
 
         // Initialize the camera executor
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -232,5 +249,4 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
     }
-
 }
