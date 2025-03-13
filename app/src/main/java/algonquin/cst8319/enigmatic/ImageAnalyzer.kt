@@ -96,9 +96,29 @@ import kotlin.coroutines.resume
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            analyzeImageConcurrently(image)
+            analyzeImage(image)
         }
         imageProxy.close()
+    }
+
+    fun analyzeImage(image: InputImage){
+        recognizer.process(image)
+            .addOnSuccessListener { visionText ->
+// This line was deleted because isTextProcessingComplete is set to false at the beginning of our analysis process
+// and I don't think we should set it to false in the success handler
+//                isTextProcessingComplete = false
+
+                //docscanner stuff
+                val isLabelDetected = detectPostalCode(visionText)
+                if (isLabelDetected) {
+                    // Pause further analysis
+                    isPaused.set(true)
+                    // Notify the Activity
+                    labelDetectedCallback.onLabelDetected()
+                }
+
+            }
+
     }
     fun analyzeImageConcurrently(image: InputImage) {
         val startTime = System.currentTimeMillis()
@@ -153,16 +173,16 @@ import kotlin.coroutines.resume
 // and I don't think we should set it to false in the success handler
 //                isTextProcessingComplete = false
 
-                //docscanner stuff
-                val isLabelDetected = detectPostalCode(visionText)
-                if (isLabelDetected) {
-                    // Pause further analysis
-                    isPaused.set(true)
-                    // Notify the Activity
-                    labelDetectedCallback.onLabelDetected()
-                }
-
-                Log.d("OCR", "Full detected text: ${visionText.text}")
+//                //docscanner stuff
+//                val isLabelDetected = detectPostalCode(visionText)
+//                if (isLabelDetected) {
+//                    // Pause further analysis
+//                    isPaused.set(true)
+//                    // Notify the Activity
+//                    labelDetectedCallback.onLabelDetected()
+//                }
+//
+//                Log.d("OCR", "Full detected text: ${visionText.text}")
 
 // use FieldExtractor to get all fields
 //                fieldExtractor = FieldExtractor(visionText.textBlocks)
