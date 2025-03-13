@@ -173,24 +173,7 @@ import kotlin.coroutines.resume
         val localExtractedFields = mutableListOf<String>()
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-// This line was deleted because isTextProcessingComplete is set to false at the beginning of our analysis process
-// and I don't think we should set it to false in the success handler
-//                isTextProcessingComplete = false
 
-//                //docscanner stuff
-//                val isLabelDetected = detectPostalCode(visionText)
-//                if (isLabelDetected) {
-//                    // Pause further analysis
-//                    isPaused.set(true)
-//                    // Notify the Activity
-//                    labelDetectedCallback.onLabelDetected()
-//                }
-//
-//                Log.d("OCR", "Full detected text: ${visionText.text}")
-
-// use FieldExtractor to get all fields
-//                fieldExtractor = FieldExtractor(visionText.textBlocks)
-//                extractedFields = fieldExtractor.extractAllFields()
                 fieldExtractor = FieldExtractor(visionText.textBlocks)
                 localExtractedFields.addAll(fieldExtractor.extractAllFields())
                 Log.d("OCR", localExtractedFields.toString())
@@ -236,7 +219,7 @@ import kotlin.coroutines.resume
 
         var localBarcodeValue = ""
 
-        if (isBarcodeProcessing.getAndSet(true)) {
+        if (isBarcodeProcessing.get()) {
             Log.d("Barcode", "Barcode processing already in progress; skipping this frame.")
             continuation.resume("")
             return@suspendCancellableCoroutine
@@ -249,7 +232,7 @@ import kotlin.coroutines.resume
 
                 if (barcodes.isNotEmpty()) {
                     for (barcode in barcodes) {
-                        barcodeValue = barcode.displayValue ?: ""
+                        localBarcodeValue = barcode.displayValue ?: ""
                         Log.d("Barcode", "Detected barcode: $barcodeValue")
 
                     }
