@@ -81,20 +81,14 @@ import java.util.concurrent.ExecutorService
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            analyzeImage(image)
+            recognizeLabel(image)
         }
         imageProxy.close()
     }
 
-    /**
-     * Uses ML Kit's TextRecognizer to detect and process text from the given InputImage.
-     * @param image The InputImage to process for text detection.
-     * @return list of recognized text blocks
-     */
-    private fun recognizeText(image: InputImage): MutableList<String> {
-        this.recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private fun recognizeLabel(image: InputImage) {
 
-        val result = recognizer.process(image)
+        recognizer.process(image)
             .addOnSuccessListener { visionText ->
 
                 isTextProcessingComplete = false
@@ -108,10 +102,29 @@ import java.util.concurrent.ExecutorService
                     labelDetectedCallback.onLabelDetected()
                 }
 
-                Log.d("OCR", "Full detected text: ${visionText.text}")
+            }
+            .addOnFailureListener { e ->
+                //Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
+            }
+            .addOnCompleteListener {
+                // Mark text processing as complete
+                isTextProcessingComplete = true
+            }
+    }
 
-                // clear list of extracted fields from previous image
-                extractedFields.clear()
+    /**
+     * Uses ML Kit's TextRecognizer to detect and process text from the given InputImage.
+     * @param image The InputImage to process for text detection.
+     * @return list of recognized text blocks
+     */
+    private fun recognizeText(image: InputImage){
+
+        recognizer.process(image)
+            .addOnSuccessListener { visionText ->
+
+                isTextProcessingComplete = false
+
+                Log.d("OCR", "Full detected text: ${visionText.text}")
 
                 // use FieldExtractor to get all fields
                 fieldExtractor = FieldExtractor(visionText.textBlocks)
@@ -126,9 +139,6 @@ import java.util.concurrent.ExecutorService
                 // Mark text processing as complete
                 isTextProcessingComplete = true
             }
-
-        return extractedFields
-
     }
 
     /**
@@ -175,7 +185,7 @@ import java.util.concurrent.ExecutorService
     }
 
     private fun detectPostalCode(visionText: Text): Boolean {
-        val postalCodeRegex = Regex("[A-Za-z]\\d[A-Za-z]\\s?\\d[A-Za-z]\\d")
+        val postalCodeRegex = Regex("""[a-zA-Z][O0-9][a-zA-Z][\\ \\-]{0,1}[O0-9][a-zA-Z][O0-9]""")
         // Iterate over all text blocks, lines, or elements
         for (block in visionText.textBlocks) {
             val blockText = block.text

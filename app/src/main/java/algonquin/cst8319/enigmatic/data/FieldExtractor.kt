@@ -33,7 +33,7 @@ class FieldExtractor(
     private val productDimensionRegex = Regex("""\d*x\d*x\d*cm""")
     private val productWeightRegex = Regex("KG")
     private val productWeightValueRegex = Regex("""\d*[.]\d\d\d""")
-    private val productInstructions = listOf("SIGNATURE", "18+ SIGNATURE", "19+ SIGNATURE", "21+ SIGNATURE", "CARD FOR PICKUP", "DELIVER TO PO", "LEAVE AT THE DOOR", "DO NOT SAFE DROP")
+    private val productInstructions = listOf("SIGNATURE", "18+ SIGNATURE", "19+ SIGNATURE", "21+ SIGNATURE", "CARD FOR PICKUP", "DELIVER TO PO", "LEAVE AT DOOR", "DO NOT SAFE DROP")
     private val referenceRegex = Regex("Ref.*R[eé]f", RegexOption.IGNORE_CASE)
 
     // variable holding the index of the found fields

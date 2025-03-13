@@ -78,7 +78,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
                             imageAnalyzer.createLabelJSON()
                             // output to UI
                             displayResults(imageUri, imageAnalyzer.getExtractedFields(), imageAnalyzer.getBarcodeValue())
-                        }, 2000)
+                        }, 500)
                     }
                 }
             }
