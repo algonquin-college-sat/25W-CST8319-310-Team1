@@ -175,7 +175,7 @@ import java.util.concurrent.ExecutorService
     }
 
     private fun detectPostalCode(visionText: Text): Boolean {
-        val postalCodeRegex = Regex("[A-Za-z]\\d[A-Za-z]\\s?\\d[A-Za-z]\\d")
+        val postalCodeRegex = Regex("""[a-zA-Z][O0-9][a-zA-Z][\\ \\-]{0,1}[O0-9][a-zA-Z][O0-9]""")
         // Iterate over all text blocks, lines, or elements
         for (block in visionText.textBlocks) {
             val blockText = block.text
