@@ -118,6 +118,10 @@ import kotlin.coroutines.resume
                 }
 
             }
+            .addOnFailureListener { e ->
+                Log.d("OCR", "Postal code recogniztion failed: ${e.localizedMessage}", e)
+
+            }
 
     }
     fun analyzeImageConcurrently(image: InputImage) {
