@@ -187,7 +187,8 @@ import java.util.concurrent.ExecutorService
      */
     fun outputToUI() {
         if (isTextProcessingComplete && isBarcodeProcessingComplete) {
-            listener.onSuccess(labelJSON.toJson())
+            val validate = ValidateData()
+            listener.onSuccess(validate.validateAndConvert(labelJSON))
         }
     }
 
