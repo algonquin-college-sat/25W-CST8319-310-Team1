@@ -25,6 +25,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import android.text.method.ScrollingMovementMethod
 import android.widget.TextView
+import androidx.activity.viewModels
+import androidx.lifecycle.Observer
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 
@@ -42,6 +44,8 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
     private lateinit var bottomSheet: View
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
+
+    private val viewModel: MainActivityViewModel by viewModels<MainActivityViewModel>()
 
     //docScanner stuff
     private val documentScannerOptions = GmsDocumentScannerOptions.Builder()
@@ -106,6 +110,56 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
         textView.movementMethod = ScrollingMovementMethod()
         bottomSheetHeader.text = "Scanning"
+
+        // Create the observers which update the UI.
+        val textObserver = Observer<String> { newText ->
+            textView.text = newText
+        }
+
+        val headerObserver = Observer<String> { newText ->
+            bottomSheetHeader.text = newText
+        }
+
+        val previewViewVisibilityObserver = Observer<Int> { visibility ->
+            binding.previewView.visibility = visibility
+        }
+
+        val resultContainerVisibilityObserver = Observer<Int> { visibility ->
+            binding.resultContainer.visibility = visibility
+        }
+
+        val imageViewVisibilityObserver = Observer<Int> { visibility ->
+            binding.imageView.visibility = visibility
+        }
+
+        // Observe the LiveData, passing in this activity as the LifecycleOwner and the observer.
+        viewModel.currentText.observe(this, textObserver)
+        viewModel.headerText.observe(this, headerObserver)
+        viewModel.previewViewVisibility.observe(this, previewViewVisibilityObserver)
+        viewModel.resultContainerVisibility.observe(this, resultContainerVisibilityObserver)
+        viewModel.imageViewVisibility.observe(this, imageViewVisibilityObserver)
+        viewModel.scannedImage.observe(this) { uri ->
+            uri?.let {
+                binding.imageView.setImageURI(it)
+            }
+        }
+
+        // FloatingActionButton for "Close"
+        closeEfab.setOnClickListener {
+            viewModel.previewViewVisibility.value = View.VISIBLE
+            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+
+            // Update viewModel
+            viewModel.headerText.value = "Scanning"
+            // Clearing the textView causes the bottom sheet to be hidden on "close".
+            // Not necessary while hidden anyways.
+            // viewModel.currentText.value = ""
+
+            viewModel.resultContainerVisibility.value = View.GONE
+            viewModel.imageViewVisibility.value = View.GONE
+
+            startCamera()
+        }
 
         // Initialize the camera executor
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -199,24 +253,15 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
         isScanningInProgress = false
 
         // Update UI to show the scanned image and extracted fields
-        binding.previewView.visibility = View.GONE
-        binding.resultContainer.visibility = View.VISIBLE
-        binding.imageView.visibility = View.VISIBLE
+        viewModel.previewViewVisibility.value = View.GONE
+        viewModel.resultContainerVisibility.value = View.VISIBLE
+        viewModel.imageViewVisibility.value = View.VISIBLE
+        viewModel.setScannedImage(image)
 
         textView.text = ""
         binding.imageView.setImageURI(image)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
         imageAnalyzer.outputToUI()
-
-        // Add FloatingActionButton for "Dismiss"
-        closeEfab.setOnClickListener {
-            binding.previewView.visibility = View.VISIBLE
-            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
-            bottomSheetHeader.text = "Scanning"
-            binding.resultContainer.visibility = View.GONE
-            binding.imageView.visibility = View.GONE
-            startCamera()
-        }
     }
 
     override fun onDestroy() {
@@ -230,7 +275,10 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
             textView.text = ""
             textView.text = result
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+
+            // Update viewModel
+            viewModel.headerText.value = bottomSheetHeader.text.toString()
+            viewModel.currentText.value = textView.text.toString()
         }
     }
-
 }
