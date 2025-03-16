@@ -67,7 +67,9 @@ import java.util.concurrent.ExecutorService
                 }
             }
         return imageAnalyzer
-    } /**
+    }
+
+    /**
      * This method is called for every frame that the ImageAnalysis use case processes.
      * Converts the ImageProxy to an InputImage and performs text recognition on it.
      * @param imageProxy The camera frame to analyze.
@@ -81,25 +83,23 @@ import java.util.concurrent.ExecutorService
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            analyzeImage(image)
+            detectLabel(image)
         }
         imageProxy.close()
     }
 
     /**
-     * Uses ML Kit's TextRecognizer to detect and process text from the given InputImage.
-     * @param image The InputImage to process for text detection.
-     * @return list of recognized text blocks
+     * Detects a shipping label from the given InputImage using ML Kit's TextRecognizer.
+     * If a postal code is found within the recognized text, the scanning process is paused,
+     * and a callback is triggered to notify the Activity.
+     * @param image The InputImage to be processed for label detection.
      */
-    private fun recognizeText(image: InputImage): MutableList<String> {
-        this.recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-
-        val result = recognizer.process(image)
+    private fun detectLabel(image: InputImage) {
+        recognizer.process(image)
             .addOnSuccessListener { visionText ->
 
                 isTextProcessingComplete = false
 
-                //docscanner stuff
                 val isLabelDetected = detectPostalCode(visionText)
                 if (isLabelDetected) {
                     // Pause further analysis
@@ -107,6 +107,26 @@ import java.util.concurrent.ExecutorService
                     // Notify the Activity
                     labelDetectedCallback.onLabelDetected()
                 }
+                Log.i("Label", "Shipping Label detected")
+            }
+            .addOnFailureListener { e ->
+                //Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
+            }
+            .addOnCompleteListener {
+                // Mark text processing as complete
+                isTextProcessingComplete = true
+            }
+    }
+    /**
+     * Uses ML Kit's TextRecognizer to detect and process text from the given InputImage.
+     * @param image The InputImage to process for text detection.
+     * @return list of recognized text blocks
+     */
+    private fun recognizeText(image: InputImage): MutableList<String> {
+        recognizer.process(image)
+            .addOnSuccessListener { visionText ->
+
+                isTextProcessingComplete = false
 
                 Log.d("OCR", "Full detected text: ${visionText.text}")
 
@@ -117,7 +137,6 @@ import java.util.concurrent.ExecutorService
                 fieldExtractor = FieldExtractor(visionText.textBlocks)
                 extractedFields = fieldExtractor.extractAllFields()
                 Log.d("OCR", extractedFields.toString())
-
             }
             .addOnFailureListener { e ->
                 //Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
@@ -126,9 +145,7 @@ import java.util.concurrent.ExecutorService
                 // Mark text processing as complete
                 isTextProcessingComplete = true
             }
-
         return extractedFields
-
     }
 
     /**
