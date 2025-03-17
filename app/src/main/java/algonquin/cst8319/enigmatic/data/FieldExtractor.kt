@@ -139,7 +139,7 @@ class FieldExtractor(
             for (line in block) {
                 // some fields are expected to be in single-line blocks
                 if (block.size == 1) {
-                    if (foundPostalCodeIndex < 0 && line.contains(postalCodeRegex)) {
+                    if (foundPostalCodeIndex < 0 && postalCodeRegex.matches(line)) {
                         foundPostalCodeIndex = cleanScannedText.indexOf(block)
                     }
                     else if (foundTrackPinIndex < 0 && line.contains(trackPinRegex)) {
