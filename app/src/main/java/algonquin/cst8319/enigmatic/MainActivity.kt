@@ -109,7 +109,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
 
         textView.movementMethod = ScrollingMovementMethod()
-        bottomSheetHeader.text = "Scanning"
+        bottomSheetHeader.text = getString(R.string.scanning)
 
         // Create the observers which update the UI.
         val textObserver = Observer<String> { newText ->
@@ -150,10 +150,10 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
 
             // Update viewModel
-            viewModel.headerText.value = "Scanning"
+            viewModel.headerText.value = getString(R.string.scanning)
             // Clearing the textView causes the bottom sheet to be hidden on "close".
             // Not necessary while hidden anyways.
-            // viewModel.currentText.value = ""
+            // viewModel.currentText.value = getString(R.string.empty_string)
 
             viewModel.resultContainerVisibility.value = View.GONE
             viewModel.imageViewVisibility.value = View.GONE
@@ -258,7 +258,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
         viewModel.imageViewVisibility.value = View.VISIBLE
         viewModel.setScannedImage(image)
 
-        textView.text = ""
+        textView.text = getString(R.string.empty_string)
         binding.imageView.setImageURI(image)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
         imageAnalyzer.outputToUI()
@@ -271,8 +271,8 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
     override fun onSuccess(result: String) {
         runOnUiThread {
-            bottomSheetHeader.text = "Label Information"
-            textView.text = ""
+            bottomSheetHeader.text = getString(R.string.label_information)
+            textView.text = getString(R.string.empty_string)
             textView.text = result
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
 
