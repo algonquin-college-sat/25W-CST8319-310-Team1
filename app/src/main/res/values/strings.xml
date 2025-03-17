@@ -1,6 +1,10 @@
 <resources>
     <string name="app_name">enigmatic_ocr</string>
-    <string name="display_text">Nothing scanned yet ...</string>
+    <string name="scanning">Scanning</string>
+    <string name="label_information">Label Information</string>
     <string name="dismiss_button">To dismiss the preview</string>
     <string name="scanned_image">Scanned Image</string>
+    <string name="close">Close</string>
+    <string name="copy">Copy</string>
+    <string name="empty_string"></string>
 </resources>
