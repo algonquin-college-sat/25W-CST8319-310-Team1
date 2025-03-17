@@ -41,6 +41,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
     private lateinit var textView: TextView
     private lateinit var bottomSheetHeader: TextView
     private lateinit var closeEfab: ExtendedFloatingActionButton
+    private lateinit var copyEfab: ExtendedFloatingActionButton
 
     private lateinit var bottomSheet: View
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
@@ -102,6 +103,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
         textView = findViewById(R.id.textView)
         bottomSheetHeader = findViewById(R.id.bottom_sheet_header)
         closeEfab = findViewById(R.id.close_efab)
+        copyEfab = findViewById(R.id.copy_efab)
 
         // Set up BottomSheetBehavior
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
@@ -159,6 +161,11 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
             viewModel.imageViewVisibility.value = View.GONE
 
             startCamera()
+        }
+
+        // FloatingActionButton for "Copy"
+        copyEfab.setOnClickListener {
+            
         }
 
         // Initialize the camera executor
