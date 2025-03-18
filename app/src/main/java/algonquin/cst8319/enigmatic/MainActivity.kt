@@ -1,6 +1,9 @@
 package algonquin.cst8319.enigmatic
 
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +28,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import android.text.method.ScrollingMovementMethod
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.lifecycle.Observer
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -165,7 +169,11 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
         // FloatingActionButton for "Copy"
         copyEfab.setOnClickListener {
-            
+            val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val copyText = viewModel.currentText.value
+            val clipData = ClipData.newPlainText("text", copyText)
+            clipboardManager.setPrimaryClip(clipData)
+            Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show()
         }
 
         // Initialize the camera executor
