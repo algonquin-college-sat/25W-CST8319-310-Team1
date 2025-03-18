@@ -96,7 +96,7 @@
             android:contentDescription=""
             android:text="@string/copy"
             android:textColor="?attr/colorPrimary"
-            android:theme="@style/Base.Theme.enigmatic_ocr"
+            android:theme="@style/Base.Theme.LabelXtract"
             app:backgroundTint="?attr/colorSecondary"
             app:icon="@drawable/copy_24"
             app:iconTint="?attr/colorPrimary"
