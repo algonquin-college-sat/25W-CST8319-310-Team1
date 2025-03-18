@@ -86,7 +86,14 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
                     }
                 }
             }
+        } else if (activityResult.resultCode == RESULT_CANCELED) {
+            Log.d("Docscanner", "Scanning was cancelled by the user")
+            resumeCameraX()
         }
+    }
+    private fun resumeCameraX() {
+        isScanningInProgress = false
+        startCamera()
     }
 
     // Status flags
