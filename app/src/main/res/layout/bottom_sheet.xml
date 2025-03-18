@@ -97,12 +97,14 @@
             android:text="@string/copy"
             android:textColor="?attr/colorPrimary"
             android:theme="@style/Base.Theme.enigmatic_ocr"
-            app:backgroundTint="@color/white"
+            app:backgroundTint="?attr/colorSecondary"
             app:icon="@drawable/copy_24"
             app:iconTint="?attr/colorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/close_efab"
-            app:layout_constraintTop_toBottomOf="@+id/textView" />
+            app:layout_constraintTop_toBottomOf="@+id/textView"
+            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="2dp" />
 
         <ProgressBar
             android:id="@+id/progressBar"
