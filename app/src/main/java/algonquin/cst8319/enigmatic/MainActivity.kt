@@ -49,6 +49,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
     private lateinit var bottomSheet: View
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
+    private lateinit var clipboardManager: ClipboardManager
 
     private val viewModel: MainActivityViewModel by viewModels<MainActivityViewModel>()
 
@@ -117,6 +118,8 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
         textView.movementMethod = ScrollingMovementMethod()
         bottomSheetHeader.text = getString(R.string.scanning)
 
+        clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
         // Create the observers which update the UI.
         val textObserver = Observer<String> { newText ->
             textView.text = newText
@@ -169,7 +172,6 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
         // FloatingActionButton for "Copy"
         copyEfab.setOnClickListener {
-            val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val copyText = viewModel.currentText.value
             val clipData = ClipData.newPlainText("text", copyText)
             clipboardManager.setPrimaryClip(clipData)
