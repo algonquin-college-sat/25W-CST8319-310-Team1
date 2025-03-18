@@ -77,7 +77,7 @@
             android:contentDescription=""
             android:text="@string/close"
             android:textColor="?attr/colorOnPrimary"
-            android:theme="@style/Base.Theme.enigmatic_ocr"
+            android:theme="@style/Base.Theme.LabelXtract"
             app:backgroundTint="?attr/colorPrimary"
             app:icon="@drawable/close_24"
             app:iconTint="?attr/colorOnPrimary"

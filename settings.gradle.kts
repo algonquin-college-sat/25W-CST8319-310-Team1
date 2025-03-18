@@ -20,5 +20,5 @@ buildscript {
     }
 }
 
-rootProject.name = "enigmatic_ocr"
+rootProject.name = "LabelXtract"
 include(":app")
