@@ -1,4 +1,4 @@
-# Label Xtract
+# LabelXtract
 
 **Team ENIGMatic**  
 *(Algonquin College – CST8319 Software Development Project)*
@@ -72,7 +72,7 @@ This application aligns with the core requirements stated in the **Project Requi
     ├── ImageAnalyzer.kt              # Core class using ML Kit to detect text/barcodes
     ├── ImageAnalyzerListener.kt      # Listener interface for analyzer callbacks
     ├── LabelJSON.kt                  # Data class for storing label fields (Kotlinx Serialization)
-    ├── PersistentBottomSheet.kt      # (Optional) Implementation for a Bottom Sheet Fragment
+    ├── PersistentBottomSheet.kt      # Implementation for a Bottom Sheet Fragment
     ├── data
     │   └── FieldExtractor.kt         # Helper class for extracting fields from OCR text blocks
     ├── xml layouts, resources, etc.
