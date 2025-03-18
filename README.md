@@ -244,6 +244,20 @@ By following these guidelines, you help us ensure that the project remains stabl
 
 ---
 
+## Contributors
+
+The **Enigmatic OCR** project was developed by the following team members as part of a software development course project:
+
+| **Name**       | **Role**            | **GitHub**                                             |
+|----------------|---------------------|-------------------------------------------------------|
+| Ekene Ndubueze  | Developer, QA, Tester     | [GitHub Profile](https://github.com/Ozi-Tech)     |
+| Naomi Bell     | Developer, UI/UX, Tester         | [GitHub Profile](https://github.com/bell0418)     |
+| Ian Philips  | Developer, Business Analyst, Tester         | [GitHub Profile](https://github.com/phil0440)     |
+| Gulnur Ospanova  | Developer, Architect/Researcher, Tester      | [GitHub Profile](https://github.com/gulnurkaztai)     |
+| Milan Neven  | Developer, Architect, Tester | [GitHub Profile](https://github.com/MilanNeven)     |
+
+---
+
 ## License
 
 This project is licensed under the [Apache License 2.0](LICENSE).  
