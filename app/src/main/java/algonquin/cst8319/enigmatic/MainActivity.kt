@@ -1,6 +1,9 @@
 package algonquin.cst8319.enigmatic
 
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +28,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import android.text.method.ScrollingMovementMethod
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.lifecycle.Observer
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -41,9 +45,11 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
     private lateinit var textView: TextView
     private lateinit var bottomSheetHeader: TextView
     private lateinit var closeEfab: ExtendedFloatingActionButton
+    private lateinit var copyEfab: ExtendedFloatingActionButton
 
     private lateinit var bottomSheet: View
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
+    private lateinit var clipboardManager: ClipboardManager
 
     private val viewModel: MainActivityViewModel by viewModels<MainActivityViewModel>()
 
@@ -109,6 +115,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
         textView = findViewById(R.id.textView)
         bottomSheetHeader = findViewById(R.id.bottom_sheet_header)
         closeEfab = findViewById(R.id.close_efab)
+        copyEfab = findViewById(R.id.copy_efab)
 
         // Set up BottomSheetBehavior
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
@@ -117,6 +124,8 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
         textView.movementMethod = ScrollingMovementMethod()
         bottomSheetHeader.text = getString(R.string.scanning)
+
+        clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
         // Create the observers which update the UI.
         val textObserver = Observer<String> { newText ->
@@ -166,6 +175,14 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
             viewModel.imageViewVisibility.value = View.GONE
 
             startCamera()
+        }
+
+        // FloatingActionButton for "Copy"
+        copyEfab.setOnClickListener {
+            val copyText = viewModel.currentText.value
+            val clipData = ClipData.newPlainText("text", copyText)
+            clipboardManager.setPrimaryClip(clipData)
+            Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show()
         }
 
         // Initialize the camera executor

@@ -85,6 +85,27 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textView" />
 
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/copy_efab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:contentDescription=""
+            android:text="@string/copy"
+            android:textColor="?attr/colorPrimary"
+            android:theme="@style/Base.Theme.enigmatic_ocr"
+            app:backgroundTint="?attr/colorSecondary"
+            app:icon="@drawable/copy_24"
+            app:iconTint="?attr/colorPrimary"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/close_efab"
+            app:layout_constraintTop_toBottomOf="@+id/textView"
+            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="2dp" />
+
         <ProgressBar
             android:id="@+id/progressBar"
             style="@style/Widget.AppCompat.ProgressBar"
