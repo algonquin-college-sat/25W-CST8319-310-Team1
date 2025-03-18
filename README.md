@@ -6,18 +6,24 @@
 ---
 
 ## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Features](#features)
-3. [Project Requirements Summary](#project-requirements-summary)  
-4. [Project Structure](#project-structure)  
-5. [Installation & Setup](#installation--setup)  
-6. [Usage](#usage)  
-7. [Sample Output](#sample-output)  
-8. [Testing](#testing)  
-9. [License & Credits](#license--credits)  
-10. [References](#references)
+1. [Quickstart](#quickstart)  
+2. [Project Overview](#project-overview)  
+3. [Features](#features)  
+4. [Project Requirements Summary](#project-requirements-summary)  
+5. [Project Structure](#project-structure)  
+6. [Technologies Used](#technologies-used)  
+7. [Installation & Setup](#installation--setup)  
+8. [Usage](#usage)  
+9. [Sample Output](#sample-output)  
+10. [License](#license)  
 
 ---
+
+## Quickstart
+1. Clone the repo
+2. Open in Android Studio
+3. Run on an Android 11+ device
+4. Scan a shipping label
 
 ## Project Overview
 **Label Xtract** is an Android application designed to read shipping labels using the device’s rear-facing camera and automatically extract key information (addresses, postal codes, barcodes, and more) via Optical Character Recognition (OCR). The data is then displayed in JSON format. This project was developed by **Team ENIGMatic** to address inefficiencies in handling non-conformant packages at Canada Post, where a small percentage of parcel labels fail to be read by traditional barcode scanners.
@@ -56,8 +62,9 @@ This application aligns with the core requirements stated in the **Project Requi
    - Hosted on a public GitHub repository under a permissive license
 
 ---
-```plaintext
+
 ## Project Structure
+```plaintext
 .
 └── algonquin.cst8319.enigmatic
     ├── MainActivity.kt                # Entry point of the app
@@ -96,6 +103,41 @@ This application aligns with the core requirements stated in the **Project Requi
 
 #### MainActivityViewModel
 - Encapsulates UI state using `LiveData` (e.g., controlling the preview or results container visibility).
+
+---
+
+## Technologies Used
+
+Below is a comprehensive list of the core technologies and libraries utilized by Label Xtract:
+
+- **![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)**  
+  Primary programming language for implementing the application logic, leveraging modern Kotlin features such as data classes, and extension functions.
+
+- **Gradle**  
+  Build automation tool used to manage project configurations, dependencies, and tasks. The Gradle wrapper ensures consistent build environments across different systems.
+
+- **Android Studio**  
+  Recommended integrated development environment (IDE) for Android app development, offering code editing, debugging, and built-in Gradle support.
+
+- **Android SDK / AndroidX Libraries**  
+  - **CameraX**: Provides a simple and consistent API to access the device camera.  
+  - **Lifecycle** / **ViewModel**: Architecture components managing UI-related data in a lifecycle-conscious way.  
+  - **Activity KTX** / **Fragment KTX** / **Core KTX**: Kotlin extension libraries that simplify common Android tasks.  
+  - **ConstraintLayout**: Flexible layout manager for UI design.  
+  - **Material Components**: Implements Material Design widgets and behaviors (e.g., Bottom Sheets).
+
+- **Google ML Kit**  
+  - **ML Kit Text Recognition**: Automatically detects and extracts text from images.  
+  - **ML Kit Barcode Scanning**: Identifies and reads barcodes (including partially damaged ones).  
+  - **Play Services Document Scanner**: Enables higher-fidelity image capture flows via `GmsDocumentScanning`.
+
+- **Kotlinx Serialization (Json)**  
+  Used for converting recognized label data into structured JSON output. Annotated classes (e.g., `@Serializable`) allow easy parsing and generation of JSON strings.
+
+- **Material Design Components**  
+  Offers ready-made UI components (buttons, text fields, bottom sheets, etc.) and ensures a modern, consistent user experience aligned with Google’s Material Design guidelines.
+
+These technologies work together to deliver a user-friendly experience. All build dependencies are specified in the app’s `build.gradle` file, making it straightforward to manage and update the libraries as needed.
 
 ---
 
@@ -203,6 +245,9 @@ By following these guidelines, you help us ensure that the project remains stabl
 ---
 
 ## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).  
+For detailed terms and conditions, please see the `LICENSE` file in the root directory of this repository.
 
 
 
