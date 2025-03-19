@@ -81,14 +81,14 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
                         Log.d("DocScanner", "JPEG page $index => $imageUri")
                         val scannedImage = InputImage.fromFilePath(this,imageUri)
 
-                        imageAnalyzer.analyzeImage(scannedImage)
-
-                        android.os.Handler(Looper.getMainLooper()).postDelayed({
-                            // create labelJSON
+                        imageAnalyzer.analyzeImage(scannedImage) {
                             imageAnalyzer.createLabelJSON()
-                            // output to UI
-                            displayResults(imageUri, imageAnalyzer.getExtractedFields(), imageAnalyzer.getBarcodeValue())
-                        }, 1000)
+                            displayResults(
+                                imageUri,
+                                imageAnalyzer.getExtractedFields(),
+                                imageAnalyzer.getBarcodeValue()
+                            )
+                        }
                     }
                 }
             }
