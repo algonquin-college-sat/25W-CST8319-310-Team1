@@ -3,11 +3,21 @@ package algonquin.cst8319.enigmatic.data
 import android.util.Log
 import com.google.mlkit.vision.text.Text.TextBlock
 
+/**
+ * FieldExtractor class is responsible for extracting specific fields from a list of scanned text blocks,
+ * obtained from an OCR process. It identifies and extracts information such as product type,
+ * addresses, postal codes, tracking numbers, and other relevant details from a Canada Post
+ * shipping label as per standard format/layout in March 2025.
+ *
+ * @param scannedTextBlocks A list of TextBlock objects representing the scanned text.
+ * @constructor Creates a field extractor with a new list of text blocks.
+ * @author Ian Phillips
+ */
 class FieldExtractor(
     private var scannedTextBlocks: List<TextBlock>
 ) {
 
-    // String variables to store the extract field, matching JSON field requirements
+    // String variables to store the extracted fields, matching JSON field requirements
     private lateinit var productType: String
     private lateinit var toAddress: String
     private lateinit var destPostalCode: String
@@ -18,25 +28,39 @@ class FieldExtractor(
     private lateinit var productInstruction: String
     private lateinit var reference: String
 
-    // lists to store sorted & extracted Strings from instance's list of text blocks
+    // Lists to store sorted & extracted Strings from instance's list of text blocks
     private var cleanScannedText = mutableListOf<MutableList<String>>()
     private var extractedFields = mutableListOf<String>()
 
-    // lists of keywords or Regex useful to find required fields when parsing the scanned label text
-    // these can be tweaked as required to improve field retrieval
+    /*
+    Keyword lists and Regex useful to find required fields when parsing the scanned label text.
+    These can be tweaked as required to improve field retrieval.
+    A good resource to construct and validate Regex is https://regex101.com/
+     */
+    // product types have limited options, so looking for exact match from a list
     private val productTypes = listOf("Priority", "Regular Parcel", "Xpresspost", "Expedited Parcel")
+    // 'to address' field always follows the header 'TO: / À:', so looking for that pattern in a forgiving fashion
     private val toAddressHeaderRegex = Regex("TO.*[AÀÅ]", RegexOption.IGNORE_CASE)
+    // Canadian postal code pattern
     // note: added the letter 'O' to the matcher for digits, since OCR recognizer often reads a 0 as O
     private val postalCodeRegex = Regex("""[a-zA-Z][O0-9][a-zA-Z][\\ \\-]{0,1}[O0-9][a-zA-Z][O0-9]""")
-    private val trackPinRegex = Regex("""\d\d\d\d\s\d\d\d\d\s\d\d\d\d\s\d\d\d\d""")
+    // track pin / tracking number pattern - looking for 4 sets of 4 digits, each separated by space
+    private val trackPinRegex = Regex("""\d{4}\s\d{4}\s\d{4}\s\d{4}""")
+    // 'from address' field always follows the header 'FROM: / DE:', so looking for that pattern in a forgiving fashion
     private val fromAddressHeaderRegex = Regex("FROM.*DE", RegexOption.IGNORE_CASE)
-    private val productDimensionRegex = Regex("""\d*x\d*x\d*cm""")
+    // product dimensions are shown in pattern 'LxWxHcm'
+    // note: regex handles both integer and decimal values, and optional single whitespace before 'cm'
+    private val productDimensionRegex = Regex("""\d*(\.\d+)?x\d*(\.\d+)?x\d*(\.\d+)?(\s)?cm""")
+    // product weight is expressed in 'KG' unit, so looking for this pattern
     private val productWeightRegex = Regex("KG")
-    private val productWeightValueRegex = Regex("""\d*[.]\d\d\d""")
+    // product weight value is listed as decimal value
+    private val productWeightValueRegex = Regex("""\d+[.]\d+""")
+    // product instructions have limited options, so looking for exact match from a list
     private val productInstructions = listOf("SIGNATURE", "18+ SIGNATURE", "19+ SIGNATURE", "21+ SIGNATURE", "CARD FOR PICKUP", "DELIVER TO PO", "LEAVE AT DOOR", "DO NOT SAFE DROP")
+    // reference at the bottom of the label follows the key 'Ref./Réf.
     private val referenceRegex = Regex("Ref.*R[eé]f", RegexOption.IGNORE_CASE)
 
-    // variable holding the index of the found fields
+    // Variables holding the index of the found fields
     private var foundProductTypeIndex = -1
     private var foundToAddressHeaderBlockIndex = -1
     private var foundToAddressHeaderLineIndex = -1
@@ -50,22 +74,59 @@ class FieldExtractor(
     private var foundReferenceIndex = -1
 
 
-    // All getters for private fields
+    // All getters for private fields that need to be accessed by other classes
+    /**
+     * Gets the product type extracted from the scanned text.
+     * @return The extracted product type.
+     */
     fun getProductType(): String {return productType}
+    /**
+     * Gets the "to" address extracted from the scanned text.
+     * @return The extracted "to" address.
+     */
     fun getToAddress(): String {return toAddress}
+    /**
+     * Gets the destination postal code extracted from the scanned text.
+     * @return The extracted destination postal code.
+     */
     fun getDestPostalCode(): String {return destPostalCode}
+    /**
+     * Gets the tracking PIN extracted from the scanned text.
+     * @return The extracted tracking PIN.
+     */
     fun getTrackPin(): String {return trackPin}
+    /**
+     * Gets the "from" address extracted from the scanned text.
+     * @return The extracted "from" address.
+     */
     fun getFromAddress(): String {return fromAddress}
+    /**
+     * Gets the product dimensions extracted from the scanned text.
+     * @return The extracted product dimensions.
+     */
     fun getProductDimension(): String {return productDimension}
+    /**
+     * Gets the product weight extracted from the scanned text.
+     * @return The extracted product weight.
+     */
     fun getProductWeight(): String {return productWeight}
+    /**
+     * Gets the product instructions extracted from the scanned text.
+     * @return The extracted product instructions.
+     */
     fun getProductInstruction(): String {return productInstruction}
+    /**
+     * Gets the reference information extracted from the scanned text.
+     * @return The extracted reference information.
+     */
     fun getReference(): String {return reference}
-
 
     /**
      * Sole public function for this class, when called it sorts the instance's list of text
      * blocks and then calls each private function relevant to field extraction, finally it
      * returns a list of extracted fields.
+     *
+     * @return A mutable list of extracted fields as strings.
      */
     fun extractAllFields() : MutableList<String> {
         if (scannedTextBlocks.isNotEmpty()) {
@@ -91,6 +152,12 @@ class FieldExtractor(
         return extractedFields
     }
 
+    /**
+     * Sorts the scanned text blocks based on their vertical position.
+     *
+     * @param scannedTextBlocks The list of TextBlock objects to sort.
+     * @return A mutable list of mutable lists of strings, representing sorted text blocks.
+     */
     private fun sortScannedTextBlocks(scannedTextBlocks: List<TextBlock>) : MutableList<MutableList<String>> {
         val sortedScannedTextStrings = mutableListOf<MutableList<String>>()
 
@@ -118,7 +185,12 @@ class FieldExtractor(
         return sortedScannedTextStrings
     }
 
-
+    /**
+     * Sorts the lines within a text block based on their vertical position.
+     *
+     * @param textBlock The TextBlock object containing lines to sort.
+     * @return A mutable list of strings representing sorted lines within the block.
+     */
     private fun sortBlockLines(textBlock: TextBlock) : MutableList<String> {
         val sortedBlock = mutableListOf<String>()
 
@@ -132,9 +204,12 @@ class FieldExtractor(
         return sortedBlock
     }
 
+    /**
+     * Finds the positions (indices) of various fields within the scanned text blocks.
+     * This method parses through the text blocks to locate headers or actual field values
+     * using regular expressions and keyword matching.
+     */
     private fun findAllFieldPositions() {
-        // parsing through all text blocks to find positions of header or actual field
-        // instead of parsing through all blocks in each field extraction methods
         for (block in cleanScannedText) {
             for (line in block) {
                 // some fields are expected to be in single-line blocks
@@ -189,6 +264,11 @@ class FieldExtractor(
         }
     }
 
+    /**
+     * Extracts the product type from the scanned text blocks.
+     *
+     * @return The extracted product type as a String.
+     */
     private fun extractProductType() : String {
         var extractedProductType = ""
 
@@ -207,6 +287,11 @@ class FieldExtractor(
         return extractedProductType
     }
 
+    /**
+     * Extracts the "to" address from the scanned text blocks.
+     *
+     * @return The extracted "to" address as a String.
+     */
     private fun extractToAddress() : String {
         var extractedToAddress = ""
 
@@ -257,7 +342,11 @@ class FieldExtractor(
         return extractedToAddress
     }
 
-
+    /**
+     * Extracts the destination postal code from the scanned text blocks.
+     *
+     * @return The extracted destination postal code as a String.
+     */
     private fun extractDestPostalCode(): String {
         var extractedDestPostalCode = ""
 
@@ -270,6 +359,11 @@ class FieldExtractor(
 
     }
 
+    /**
+     * Extracts the tracking PIN from the scanned text blocks.
+     *
+     * @return The extracted tracking PIN as a String.
+     */
     private fun extractTrackPin(): String {
         var extractedTrackPin = ""
 
@@ -289,6 +383,11 @@ class FieldExtractor(
 
     }
 
+    /**
+     * Extracts the "from" address from the scanned text blocks.
+     *
+     * @return The extracted "from" address as a String.
+     */
     private fun extractFromAddress() : String {
         var extractedFromAddress = ""
 
@@ -337,6 +436,11 @@ class FieldExtractor(
         return extractedFromAddress
     }
 
+    /**
+     * Extracts the product dimensions from the scanned text blocks.
+     *
+     * @return The extracted product dimensions as a String.
+     */
     private fun extractProductDimension(): String {
         var extractedProductDimension = ""
 
@@ -348,38 +452,64 @@ class FieldExtractor(
         return extractedProductDimension
     }
 
+    /**
+     * Extracts the product weight from the scanned text blocks.
+     *
+     * @return The extracted product weight as a String.
+     */
     private fun extractProductWeight(): String {
+        var extractedProductWeightValue = ""
+        val extractedProductWeightUnit = "kg"
         var extractedProductWeight = ""
 
         if(foundProductWeightIndex>=0) {
             val productWeightBlock = cleanScannedText[foundProductWeightIndex]
+
             // first line of block is usually weight value, but sometimes the value is
-            // in a previous block, so checking that first line does not contain 'kg'
-            if (!productWeightBlock[0].contains(productWeightRegex)) {
-                extractedProductWeight = productWeightBlock[0]
+            // in a previous block, so first checking if first line matches product weight value format
+            if (productWeightBlock[0].contains(productWeightValueRegex)) {
+                extractedProductWeightValue = productWeightBlock[0]
             }
-            // check previous block and make sure it's not the product dimensions or 'from/to' header
-            else if (!cleanScannedText[foundProductWeightIndex - 1][0].contains(productDimensionRegex) &&
-                        !cleanScannedText[foundProductWeightIndex - 1][0].contains(fromAddressHeaderRegex)){
-                extractedProductWeight = cleanScannedText[foundProductWeightIndex - 1][0]
-
-            }
-            // check 2nd previous block and make sure it's not the product dimensions or 'from/to' header
-            else if (!cleanScannedText[foundProductWeightIndex - 2][0].contains(productDimensionRegex) &&
-                !cleanScannedText[foundProductWeightIndex - 2][0].contains(fromAddressHeaderRegex)){
-                extractedProductWeight = cleanScannedText[foundProductWeightIndex - 2][0]
-
-            }
-            // lastly, assume that the product weight value is the 3rd previous block
+            // else, the product weight value is expected in one of the three previous block
             else {
-                extractedProductWeight = cleanScannedText[foundProductWeightIndex - 3][0]
+                var previousBlockIndex = foundProductWeightIndex - 1
+
+                while (previousBlockIndex >= foundProductWeightIndex - 3) {
+                    // check that block it's not the product dimensions or 'from/to' header
+                    if (!intArrayOf(
+                            foundProductDimensionIndex,
+                            foundFromAddressHeaderBlockIndex
+                        ).contains(previousBlockIndex)
+                    ) {
+                        for (line in cleanScannedText[previousBlockIndex]) {
+                            if (line.contains(productWeightValueRegex)) {
+                                extractedProductWeightValue = line
+                                break
+                            }
+                        }
+                    }
+                    if (extractedProductWeightValue != "") {
+                        break
+                    } else {
+                        previousBlockIndex -= 1
+                    }
+                }
             }
         }
 
-        extractedFields.add("productWeight: ${extractedProductWeight}kg")
+        // add the weight unit to the extracted product weight value
+        if (extractedProductWeightValue != "") {
+            extractedProductWeight = extractedProductWeightValue+extractedProductWeightUnit
+        }
+        extractedFields.add("productWeight: ${extractedProductWeight}")
         return extractedProductWeight
     }
 
+    /**
+     * Extracts the product instructions from the scanned text blocks.
+     *
+     * @return The extracted product instructions as a String.
+     */
     private fun extractProductInstruction(): String {
         var extractedProductInstruction = ""
 
@@ -398,6 +528,11 @@ class FieldExtractor(
         return extractedProductInstruction
     }
 
+    /**
+     * Extracts the reference from the scanned text blocks.
+     *
+     * @return The extracted reference as a String.
+     */
     private fun extractReference(): String {
         var extractedReference = ""
 
