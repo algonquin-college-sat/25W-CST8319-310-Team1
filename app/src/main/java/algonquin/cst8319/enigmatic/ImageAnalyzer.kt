@@ -120,43 +120,59 @@ import java.util.concurrent.ExecutorService
     /**
      * Uses ML Kit's TextRecognizer to detect and process text from the given InputImage.
      * @param image The InputImage to process for text detection.
-     * @return list of recognized text blocks
+     * @param onComplete Callback invoked when text recognition is complete, providing
+      * a list of extracted field strings.
      */
-    private fun recognizeText(image: InputImage): MutableList<String> {
+    private fun recognizeText(image: InputImage, onComplete: (List<String>) -> Unit) {
+        isTextProcessingComplete = false
+
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-
-                isTextProcessingComplete = false
-
                 Log.d("OCR", "Full detected text: ${visionText.text}")
-
                 // clear list of extracted fields from previous image
                 extractedFields.clear()
-
                 // use FieldExtractor to get all fields
                 fieldExtractor = FieldExtractor(visionText.textBlocks)
                 extractedFields = fieldExtractor.extractAllFields()
                 Log.d("OCR", extractedFields.toString())
+
+                onComplete(extractedFields)
             }
             .addOnFailureListener { e ->
-                //Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
+                Log.e("OCR", "Text recognizer failed: ${e.localizedMessage}", e)
+                // avoids null handling. safer than returning null.
+                onComplete(emptyList())
             }
             .addOnCompleteListener {
                 // Mark text processing as complete
                 isTextProcessingComplete = true
             }
-        return extractedFields
     }
 
+
     /**
-     * Processes barcode scanning on the given InputImage.
+     * Processes barcode scanning on the given [InputImage].
+     *
+     * If a barcode scan is already in progress, this function will skip processing
+     * the current frame to avoid overlapping scans, and immediately invoke [onComplete]
+     * to ensure that the calling flow can continue without hanging.
+     *
+     * The provided [onComplete] callback will be called after barcode scanning completes
+     * successfully, fails, or is skipped.
+     *
+     * @param image The [InputImage] to scan for barcodes.
+     * @param onComplete Callback invoked when barcode processing is finished or skipped.
      */
-    private fun processBarcode(image: InputImage) {
+    private fun processBarcode(image: InputImage, onComplete: () -> Unit) {
         if (isBarcodeProcessing) {
             Log.d("Barcode", "Barcode processing already in progress; skipping this frame.")
+            onComplete() // call it to prevent hanging :)
             return
         }
+
         isBarcodeProcessing = true
+        isBarcodeProcessingComplete = false
+
         barcodeScanner.process(image)
             .addOnSuccessListener { barcodes ->
                 barcodeValue = ""
@@ -164,32 +180,31 @@ import java.util.concurrent.ExecutorService
                     for (barcode in barcodes) {
                         barcodeValue = barcode.displayValue ?: ""
                         Log.d("Barcode", "Detected barcode: $barcodeValue")
-
                     }
                 } else {
-                    Log.d("Barcode", "No barcode detected in this frame.")
+                   // Log.d("Barcode", "No barcode detected in this frame.")
                 }
             }
             .addOnFailureListener { e ->
-                //Log.e("Barcode", "Barcode scanning failed: ${e.localizedMessage}", e)
+               // Log.e("Barcode", "Barcode scanning failed: ${e.localizedMessage}", e)
             }
             .addOnCompleteListener {
                 // Reset flag so next frame can trigger barcode scanning
                 isBarcodeProcessing = false
-
                 // Mark barcode processing as complete
                 isBarcodeProcessingComplete = true
+                onComplete()
             }
     }
+
 
     /**
      * Updates the UI with the extracted label data.
      */
     fun outputToUI() {
-        if (isTextProcessingComplete && isBarcodeProcessingComplete) {
             val validate = ValidateData()
             listener.onSuccess(validate.validateAndConvert(labelJSON))
-        }
+
     }
 
     private fun detectPostalCode(visionText: Text): Boolean {
@@ -205,9 +220,14 @@ import java.util.concurrent.ExecutorService
         return false // No match found
     }
 
-    fun analyzeImage (image: InputImage) {
-        recognizeText(image)
-        processBarcode(image)
+    fun analyzeImage(image: InputImage, onComplete: () -> Unit) {
+        recognizeText(image) { extractedFields ->
+            // Once text recognition is done, process barcode
+            processBarcode(image) {
+                // Barcode is done — now call onComplete
+                onComplete()
+            }
+        }
     }
 
     fun createLabelJSON() {
