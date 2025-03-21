@@ -1,12 +1,8 @@
-package algonquin.cst8319.enigmatic
+package algonquin.cst8319.enigmatic.presentation
 
+import algonquin.cst8319.enigmatic.R
 import android.app.Dialog
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.TextView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
