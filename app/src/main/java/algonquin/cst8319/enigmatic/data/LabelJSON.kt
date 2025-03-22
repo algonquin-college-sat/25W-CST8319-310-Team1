@@ -1,4 +1,4 @@
-package algonquin.cst8319.enigmatic
+package algonquin.cst8319.enigmatic.data
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString

@@ -1,10 +1,10 @@
-package algonquin.cst8319.enigmatic
+package algonquin.cst8319.enigmatic.data
 
-import android.graphics.Bitmap
 import android.net.Uri
 import android.view.View
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+
 class MainActivityViewModel : ViewModel() {
     val currentText: MutableLiveData<String> = MutableLiveData()
     val headerText: MutableLiveData<String> = MutableLiveData()

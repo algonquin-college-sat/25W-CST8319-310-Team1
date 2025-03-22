@@ -1,18 +1,24 @@
 package algonquin.cst8319.enigmatic
 
+import algonquin.cst8319.enigmatic.data.MainActivityViewModel
 import algonquin.cst8319.enigmatic.databinding.ActivityMainBinding
+import algonquin.cst8319.enigmatic.processing.ImageAnalyzer
+import algonquin.cst8319.enigmatic.processing.LabelDetectedCallback
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Looper
+import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.View
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.Preview
@@ -20,21 +26,17 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Observer
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import android.text.method.ScrollingMovementMethod
-import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.viewModels
-import androidx.lifecycle.Observer
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 
-@ExperimentalGetImage class MainActivity : AppCompatActivity(), ImageAnalyzer.LabelDetectedCallback, ImageAnalyzerListener {
+@ExperimentalGetImage class MainActivity : AppCompatActivity(), LabelDetectedCallback {
 
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var cameraProvider: ProcessCameraProvider
@@ -53,57 +55,49 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
     private val viewModel: MainActivityViewModel by viewModels<MainActivityViewModel>()
 
-    //docScanner stuff
+    // Status flags
+    private var isScanningInProgress = false
+
+    // Document Scanner options
     private val documentScannerOptions = GmsDocumentScannerOptions.Builder()
         .setGalleryImportAllowed(false)
-        .setPageLimit(1) // or 2 if we want to somehow store multiple scans per session
+        .setPageLimit(1) // or 2 if multiple scans per session are required
         .setResultFormats(
-            GmsDocumentScannerOptions.RESULT_FORMAT_JPEG // or PDF is we want
+            GmsDocumentScannerOptions.RESULT_FORMAT_JPEG // or PDF if preferred
         )
         .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
         .build()
 
-    // The client that launches the document scanner flow
+    // Client that launches the document scanner flow
     private val docScannerClient = GmsDocumentScanning.getClient(documentScannerOptions)
 
     // Define scannerLauncher:
-    private val scannerLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
+    private val scannerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
         if (activityResult.resultCode == RESULT_OK) {
             // Retrieve the scanning result
             val scanResult = GmsDocumentScanningResult.fromActivityResultIntent(activityResult.data)
 
-            // For JPEG pages (if you requested RESULT_FORMAT_JPEG)
+            // For JPEG pages
             if (scanResult != null) {
-                scanResult.getPages()?.let { pages ->
+                scanResult.pages?.let { pages ->
                     for ((index, page) in pages.withIndex()) {
                         val imageUri = page.imageUri
-                        // Do something with this Uri, e.g. run Text Recognition
                         Log.d("DocScanner", "JPEG page $index => $imageUri")
-                        val scannedImage = InputImage.fromFilePath(this,imageUri)
 
-                        imageAnalyzer.analyzeImage(scannedImage) {
-                            imageAnalyzer.createLabelJSON()
-                            displayResults(
-                                imageUri,
-                                imageAnalyzer.getExtractedFields(),
-                                imageAnalyzer.getBarcodeValue()
-                            )
+                        // Send scanner image for analysis and display results
+                        val scannedImage = InputImage.fromFilePath(this,imageUri)
+                        imageAnalyzer.analyzeDocScannerImage(scannedImage) {
+                            displayResults(imageUri)
                         }
                     }
                 }
             }
         } else if (activityResult.resultCode == RESULT_CANCELED) {
-            Log.d("Docscanner", "Scanning was cancelled by the user")
+            Log.d("DocScanner", "Scanning was cancelled by the user")
             resumeCameraX()
         }
     }
-    private fun resumeCameraX() {
-        isScanningInProgress = false
-        startCamera()
-    }
-
-    // Status flags
-    private var isScanningInProgress = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -192,6 +186,11 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
         startCamera()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraExecutor.shutdown()
+    }
+
     private fun checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -223,7 +222,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
                 cameraProvider.unbindAll()
 
                 // instantiate the ImageAnalyzer and bind it to the cameraProvider
-                imageAnalyzer = ImageAnalyzer(this, this)
+                imageAnalyzer = ImageAnalyzer(this)
                 val imageAnalysis = imageAnalyzer.createImageAnalysis(cameraExecutor)
 
                 cameraProvider.bindToLifecycle(
@@ -237,6 +236,11 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 
             }
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun resumeCameraX() {
+        isScanningInProgress = false
+        startCamera()
     }
 
     /**
@@ -270,10 +274,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
             }
     }
 
-    private fun displayResults(image: Uri, extractedFields: List<String>, barcodeValue: String) {
-        Log.d("displayResults", "Displaying results: ${extractedFields.joinToString("\n")}")
-
-        // debugging
+    private fun displayResults(image: Uri) {
         isScanningInProgress = false
 
         // Update UI to show the scanned image and extracted fields
@@ -285,19 +286,15 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
         textView.text = getString(R.string.empty_string)
         binding.imageView.setImageURI(image)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
-        imageAnalyzer.outputToUI()
+
+        outputProcessedLabelData(imageAnalyzer.getFinalValidatedOutput())
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        cameraExecutor.shutdown()
-    }
-
-    override fun onSuccess(result: String) {
+    private fun outputProcessedLabelData(processedLabelData: String) {
         runOnUiThread {
             bottomSheetHeader.text = getString(R.string.label_information)
             textView.text = getString(R.string.empty_string)
-            textView.text = result
+            textView.text = processedLabelData
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
 
             // Update viewModel
@@ -305,4 +302,5 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
             viewModel.currentText.value = textView.text.toString()
         }
     }
+
 }

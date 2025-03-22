@@ -1,4 +1,4 @@
-package algonquin.cst8319.enigmatic
+package algonquin.cst8319.enigmatic.data
 import android.media.AudioManager
 import android.media.ToneGenerator
 
@@ -7,9 +7,7 @@ import android.media.ToneGenerator
  * It checks for missing or invalid fields such as toAddress, fromAddress, and barCode.
  * If validation fails, it triggers an error beep and returns an error message.
  */
-class ValidateData {
-
-
+class Validator {
 
     private var hasInvalidField: Boolean = false
     /**
@@ -59,12 +57,11 @@ class ValidateData {
         }
     }
 
-
     /**
      * Plays an error beep tone using the device’s alarm stream.
      * Called when invalid or missing fields are detected.
      */
-     fun playErrorBeep() {
+    private fun playErrorBeep() {
          val toneGen1 = ToneGenerator(AudioManager.STREAM_ALARM, 100)
          toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 1000)
          toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 1000)

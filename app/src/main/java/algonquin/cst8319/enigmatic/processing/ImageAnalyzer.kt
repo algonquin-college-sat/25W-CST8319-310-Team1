@@ -1,6 +1,8 @@
-package algonquin.cst8319.enigmatic
+package algonquin.cst8319.enigmatic.processing
 
 import algonquin.cst8319.enigmatic.data.FieldExtractor
+import algonquin.cst8319.enigmatic.data.LabelJSON
+import algonquin.cst8319.enigmatic.data.Validator
 import android.util.Log
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -17,7 +19,6 @@ import java.util.concurrent.ExecutorService
 
 @ExperimentalGetImage class ImageAnalyzer(
     private val labelDetectedCallback: LabelDetectedCallback,
-    private val listener: ImageAnalyzerListener
 ) : ImageAnalysis.Analyzer {
 
     // ML Kit's TextRecognizer instance, used for detecting text in images
@@ -26,32 +27,25 @@ import java.util.concurrent.ExecutorService
     // FieldExtractor instance - initialized in recognizeText method
     private lateinit var fieldExtractor: FieldExtractor
 
-    // interface for Activity
-    interface LabelDetectedCallback {
-        fun onLabelDetected()
-    }
-
     // Status flags
     private var isTextProcessingComplete = false
     private var isBarcodeProcessingComplete = false
     private var isBarcodeProcessing = false
     private var isPaused = false
 
-
-    // data structures to store recognized text blocks and barcode value
+    // Data structures to store extracted label fields
     private var barcodeValue = ""
     private var extractedFields = mutableListOf<String>()
     private lateinit var labelJSON: LabelJSON
+    private lateinit var finalValidatedOutput: String
 
-    //BarcodeScanner instance
+    // BarcodeScanner instance
     private val options = BarcodeScannerOptions.Builder()
         .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
         .build()
     private val barcodeScanner = BarcodeScanning.getClient(options)
 
-    // getters
-    fun getBarcodeValue() : String {return barcodeValue}
-    fun getExtractedFields() : List<String> {return extractedFields}
+    fun getFinalValidatedOutput() : String {return finalValidatedOutput}
 
     /**
      * Creates an ImageAnalysis use case with the desired settings and analyzer.
@@ -88,6 +82,21 @@ import java.util.concurrent.ExecutorService
         imageProxy.close()
     }
 
+    fun analyzeDocScannerImage(image: InputImage, onComplete: () -> Unit) {
+        processLabelText(image) {
+            // Once text recognition is done, process barcode
+            processBarcode(image) {
+                // Barcode is done — now create label JSON
+                createLabelJSON {
+                    // JSON created — now call onComplete
+                    validateJSON {
+                        onComplete()
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Detects a shipping label from the given InputImage using ML Kit's TextRecognizer.
      * If a postal code is found within the recognized text, the scanning process is paused,
@@ -117,13 +126,14 @@ import java.util.concurrent.ExecutorService
                 isTextProcessingComplete = true
             }
     }
+
     /**
      * Uses ML Kit's TextRecognizer to detect and process text from the given InputImage.
      * @param image The InputImage to process for text detection.
      * @param onComplete Callback invoked when text recognition is complete, providing
       * a list of extracted field strings.
      */
-    private fun recognizeText(image: InputImage, onComplete: (List<String>) -> Unit) {
+    private fun processLabelText(image: InputImage, onComplete: (List<String>) -> Unit) {
         isTextProcessingComplete = false
 
         recognizer.process(image)
@@ -197,16 +207,6 @@ import java.util.concurrent.ExecutorService
             }
     }
 
-
-    /**
-     * Updates the UI with the extracted label data.
-     */
-    fun outputToUI() {
-            val validate = ValidateData()
-            listener.onSuccess(validate.validateAndConvert(labelJSON))
-
-    }
-
     private fun detectPostalCode(visionText: Text): Boolean {
         val postalCodeRegex = Regex("""[a-zA-Z][O0-9][a-zA-Z][\\ \\-]{0,1}[O0-9][a-zA-Z][O0-9]""")
         // Iterate over all text blocks, lines, or elements
@@ -220,17 +220,7 @@ import java.util.concurrent.ExecutorService
         return false // No match found
     }
 
-    fun analyzeImage(image: InputImage, onComplete: () -> Unit) {
-        recognizeText(image) { extractedFields ->
-            // Once text recognition is done, process barcode
-            processBarcode(image) {
-                // Barcode is done — now call onComplete
-                onComplete()
-            }
-        }
-    }
-
-    fun createLabelJSON() {
+    private fun createLabelJSON(onComplete: () -> Unit) {
         labelJSON = LabelJSON(
             fieldExtractor.getProductType(),
             fieldExtractor.getToAddress(),
@@ -243,6 +233,14 @@ import java.util.concurrent.ExecutorService
             fieldExtractor.getProductInstruction(),
             fieldExtractor.getReference())
 
+        onComplete()
+    }
+
+    private fun validateJSON(onComplete: () -> Unit) {
+        val validate = Validator()
+        finalValidatedOutput = validate.validateAndConvert(labelJSON)
+
+        onComplete()
     }
 
 }
