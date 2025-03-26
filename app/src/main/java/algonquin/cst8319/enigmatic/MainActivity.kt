@@ -314,7 +314,17 @@ import java.util.concurrent.Executors
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
         viewModel.progressBarVisibility.value = View.GONE
 
-        outputProcessedLabelData(imageAnalyzer.getFinalValidatedOutput())
+        val finalValidatedOutput = imageAnalyzer.getFinalValidatedOutput()
+
+        if(finalValidatedOutput.contains("MISSING_FIELDS:")) {
+
+            val missingFields = finalValidatedOutput.removePrefix("MISSING_FIELDS:")
+            val errorMessage = getString(R.string.error_missing_fields, missingFields)
+            outputProcessedLabelData(errorMessage)
+
+        } else {
+            outputProcessedLabelData(finalValidatedOutput)
+        }
     }
 
     private fun outputProcessedLabelData(processedLabelData: String) {

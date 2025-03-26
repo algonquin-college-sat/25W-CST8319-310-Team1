@@ -5,5 +5,7 @@
     <string name="label_information">Informations sur l\'étiquette</string>
     <string name="close">Fermer</string>
     <string name="copy">Copie</string>
-    <string name="error_missing_fields">Champs manquants ou non valides : %1$s\\n\\nVeuillez rescanner et réessayer.</string>
+    <string name="error_missing_fields">Champs manquants ou non valides : %1$s\n\nVeuillez rescanner et réessayer.</string>
+    <string name="dismiss_button">Pour annuler l\'aperçu.</string>
+    <string name="scanned_image">Image scannée</string>
 </resources>
