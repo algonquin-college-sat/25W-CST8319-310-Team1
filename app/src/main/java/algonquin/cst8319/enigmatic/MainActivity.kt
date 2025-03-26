@@ -25,10 +25,12 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.opengl.Visibility
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.View
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.IntentSenderRequest
@@ -64,6 +66,7 @@ import java.util.concurrent.Executors
     private lateinit var bottomSheetHeader: TextView
     private lateinit var closeEfab: ExtendedFloatingActionButton
     private lateinit var copyEfab: ExtendedFloatingActionButton
+    private lateinit var progressBar: ProgressBar
 
     private lateinit var bottomSheet: View
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
@@ -126,6 +129,7 @@ import java.util.concurrent.Executors
         bottomSheetHeader = findViewById(R.id.bottom_sheet_header)
         closeEfab = findViewById(R.id.close_efab)
         copyEfab = findViewById(R.id.copy_efab)
+        progressBar = findViewById(R.id.progressBar)
 
         // Set up BottomSheetBehavior
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
@@ -158,12 +162,17 @@ import java.util.concurrent.Executors
             binding.imageView.visibility = visibility
         }
 
+        val progressBarVisibilityObserver = Observer<Int> { visibility ->
+            progressBar.visibility = visibility
+        }
+
         // Observe the LiveData, passing in this activity as the LifecycleOwner and the observer.
         viewModel.currentText.observe(this, textObserver)
         viewModel.headerText.observe(this, headerObserver)
         viewModel.previewViewVisibility.observe(this, previewViewVisibilityObserver)
         viewModel.resultContainerVisibility.observe(this, resultContainerVisibilityObserver)
         viewModel.imageViewVisibility.observe(this, imageViewVisibilityObserver)
+        viewModel.progressBarVisibility.observe(this, progressBarVisibilityObserver)
         viewModel.scannedImage.observe(this) { uri ->
             uri?.let {
                 binding.imageView.setImageURI(it)
@@ -174,6 +183,7 @@ import java.util.concurrent.Executors
         closeEfab.setOnClickListener {
             viewModel.previewViewVisibility.value = View.VISIBLE
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+            viewModel.progressBarVisibility.value = View.VISIBLE
 
             // Update viewModel
             viewModel.headerText.value = getString(R.string.scanning)
@@ -302,6 +312,7 @@ import java.util.concurrent.Executors
         textView.text = getString(R.string.empty_string)
         binding.imageView.setImageURI(image)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+        viewModel.progressBarVisibility.value = View.GONE
 
         outputProcessedLabelData(imageAnalyzer.getFinalValidatedOutput())
     }
