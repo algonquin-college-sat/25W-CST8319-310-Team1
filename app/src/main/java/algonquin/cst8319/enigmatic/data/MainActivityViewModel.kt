@@ -12,6 +12,7 @@ class MainActivityViewModel : ViewModel() {
     val resultContainerVisibility: MutableLiveData<Int> = MutableLiveData(View.GONE)
     val imageViewVisibility: MutableLiveData<Int> = MutableLiveData(View.GONE)
     val scannedImage: MutableLiveData<Uri?> = MutableLiveData(null)
+    val progressBarVisibility: MutableLiveData<Int> = MutableLiveData(View.VISIBLE)
 
     /***
      * Update image and visibility.

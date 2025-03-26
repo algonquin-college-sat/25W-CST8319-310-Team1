@@ -115,7 +115,6 @@
             android:indeterminate="true"
             android:indeterminateTint="?attr/colorPrimary"
             android:progressTint="#9C27B0"
-            android:visibility="invisible"
             app:layout_constraintBottom_toBottomOf="@+id/bottom_sheet_header"
             app:layout_constraintStart_toEndOf="@+id/bottom_sheet_header"
             app:layout_constraintTop_toTopOf="@+id/bottom_sheet_header" />
