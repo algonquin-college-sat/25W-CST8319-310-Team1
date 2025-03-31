@@ -146,10 +146,10 @@ Below is a comprehensive list of the core technologies and libraries utilized by
 - **![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)**  
   Primary programming language for implementing the application logic, leveraging modern Kotlin features such as data classes, and extension functions.
 
-- **Gradle**  
+- **![Gradle](https://img.shields.io/badge/Gradle-02303A.svg?style=for-the-badge&logo=Gradle&logoColor=white)**  
   Build automation tool used to manage project configurations, dependencies, and tasks. The Gradle wrapper ensures consistent build environments across different systems.
 
-- **Android Studio**  
+- **![Android Studio](https://img.shields.io/badge/Android%20Studio-3DDC84.svg?style=for-the-badge&logo=android-studio&logoColor=white)** 
   Recommended integrated development environment (IDE) for Android app development, offering code editing, debugging, and built-in Gradle support.
 
 - **Android SDK / AndroidX Libraries**  
@@ -159,7 +159,7 @@ Below is a comprehensive list of the core technologies and libraries utilized by
   - **ConstraintLayout**: Flexible layout manager for UI design.  
   - **Material Components**: Implements Material Design widgets and behaviors (e.g., Bottom Sheets).
 
-- **Google ML Kit**  
+- **![Google ML Kit](https://img.shields.io/badge/Google%20ML%20Kit-4285F4?style=for-the-badge&logo=google&logoColor=white)** 
   - **ML Kit Text Recognition**: Automatically detects and extracts text from images.  
   - **ML Kit Barcode Scanning**: Identifies and reads barcodes (including partially damaged ones).  
   - **Play Services Document Scanner**: Enables higher-fidelity image capture flows via `GmsDocumentScanning`.
@@ -167,7 +167,7 @@ Below is a comprehensive list of the core technologies and libraries utilized by
 - **Kotlinx Serialization (Json)**  
   Used for converting recognized label data into structured JSON output. Annotated classes (e.g., `@Serializable`) allow easy parsing and generation of JSON strings.
 
-- **Material Design Components**  
+- **![Material Design](https://img.shields.io/badge/Material%20Design-757575?style=for-the-badge&logo=material-design&logoColor=white)**  
   Offers ready-made UI components (buttons, text fields, bottom sheets, etc.) and ensures a modern, consistent user experience aligned with Google’s Material Design guidelines.
 
 These technologies work together to deliver a user-friendly experience. All build dependencies are specified in the app’s `build.gradle` file, making it straightforward to manage and update the libraries as needed.
