@@ -179,7 +179,7 @@ These technologies work together to deliver a user-friendly experience. All buil
 ### Prerequisites
 - Android Studio Hedgehog (2023.1.1) or newer
 - Kotlin 2.0.0 or newer
-- Android device running Android 11 (API level 30) or higher
+- **![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)** device running Android 11 (API level 30) or higher
 - Camera permissions enabled on the test device
 
 ### Steps
