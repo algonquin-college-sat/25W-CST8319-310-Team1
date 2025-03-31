@@ -46,7 +46,6 @@ class Validator {
      * @return A JSON string if valid, or an error message if invalid.
      */
     fun validateAndConvert(label: LabelJSON): String {
-        var errorMessage: String = ""
         val missingFields = mutableListOf<String>()
         val minToAddressLength = 9
         val minBarcodeLength = 7
@@ -73,8 +72,7 @@ class Validator {
             label.toJson()
         } else {
             playErrorBeep()
-            "Missing or invalid fields: ${missingFields.joinToString(", ")}\n\nplease rescan and try again"
-
+            "MISSING_FIELDS:" + missingFields.joinToString(", ")
         }
     }
 
