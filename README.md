@@ -3,6 +3,8 @@
 **Team ENIGMatic**  
 *(Algonquin College – CST8319 Software Development Project)*
 
+  ![LabelXtract Logo](https://github.com/algonquin-college-sat/25W-CST8319-310-Team1/blob/251c62a3a46c071ff287be37782550395919a632/app/src/main/ic_launcher-playstore.png)
+
 ---
 
 ## Table of Contents
@@ -15,33 +17,46 @@
 7. [Installation & Setup](#installation--setup)  
 8. [Usage](#usage)  
 9. [Sample Output](#sample-output)  
-10. [License](#license)  
+10. [Contribution Guidelines](#contribution-guidelines)
+11. [Contributors](#contributors)
+12. [License](#license)  
 
 ---
 
 ## Quickstart
 1. Clone the repo
 2. Open in Android Studio
-3. Run on an Android 11+ device
-4. Scan a shipping label
+3. Run on an Android 11+ device (API level 30+)
+4. Point your camera at a Canada Post shipping label 
+5. View extracted data in JSON format
 
 ## Project Overview
 **Label Xtract** is an Android application designed to read shipping labels using the device’s rear-facing camera and automatically extract key information (addresses, postal codes, barcodes, and more) via Optical Character Recognition (OCR). The data is then displayed in JSON format. This project was developed by **Team ENIGMatic** to address inefficiencies in handling non-conformant packages at Canada Post, where a small percentage of parcel labels fail to be read by traditional barcode scanners.
 
 **Core Goals:**
 - Provide depot clerks with a tool to quickly extract all relevant shipping label info.
-- Offer an intuitive and automated way to handle partially damaged or otherwise unscannable labels.
-- Produce a structured JSON output containing the recognized fields.
+- Handle damaged or partially unreadable labels that traditional scanners struggle with
+- Produce structured data for further processing
+- Create an intuitive, user-friendly interface for quick scanning in a busy environment
 
 ---
 
 ## Features
-- **Continuous Camera Feed** using the Android **CameraX** library to capture frames in real time.
-- **Automatic Text Recognition** using [Google ML Kit’s TextRecognition](https://developers.google.com/ml-kit/vision/text-recognition).
-- **Barcode Scanning** using [Google ML Kit’s BarcodeScanning](https://developers.google.com/ml-kit/vision/barcode-scanning).
-- **Postal Code Detection** via regex pattern matching for Canadian postal codes.
-- **JSON Output** that displays recognized text, barcodes, addresses, and other relevant fields.
-- **Document Scanner Integration** (via GmsDocumentScanning) to capture higher-fidelity images if needed.
+- **Intelligent Label Detection:** Automatically detects Canadian postal codes to identify shipping labels
+- **High-Quality Document Scanning:** Uses Google's Document Scanner API for clear label captures
+- **Advanced OCR Processing:** Extracts text from images using Google ML Kit's Text Recognition
+- **Field Extraction Logic:** Parses detected text to identify specific shipping label fields:
+    - Product type (Priority, Xpresspost, Regular Parcel, etc.)
+    - Sender and recipient addresses
+    - Postal codes
+    - Tracking numbers
+    - Package dimensions and weight
+    - Special handling instructions
+- **Barcode Scanning:** Identifies and reads barcodes even if partially damaged
+- **JSON Output:** Presents all extracted data in a clean, structured format
+- **Copy to Clipboard:** One-tap copying of the JSON output for easy use in other applications
+- **Intuitive UI:** Simple camera-based interface with clear result display
+- **Error Handling:** Validates extracted data and provides audio feedback for missing fields
 
 ---
 
@@ -49,14 +64,14 @@
 This application aligns with the core requirements stated in the **Project Requirements Specification (PRS)**:
 
 1. **Functional Requirements**  
-   - OCR scanning of shipping labels  
-   - Barcode detection and retrieval of the barcode text  
+   - OCR scanning of shipping labels to extract data
+   - Barcode detection and text extraction
    - JSON output for recognized fields  
    - Handling of partially damaged labels  
    - Intuitive UI and user flow
 
 2. **Non-Functional Requirements**  
-   - Compatible with Android 11 or higher  
+   - Compatible with Android 11 (API level 30) or higher  
    - Sub-second processing time for scans  
    - Developed using Agile methodology  
    - Hosted on a public GitHub repository under a permissive license
@@ -64,17 +79,22 @@ This application aligns with the core requirements stated in the **Project Requi
 ---
 
 ## Project Structure
+The application follows the MVC architecture pattern and is organized into the following packages:
+
 ```plaintext
 .
-└── algonquin.cst8319.enigmatic
-    ├── MainActivity.kt                # Entry point of the app
-    ├── MainActivityViewModel.kt      # ViewModel for LiveData (UI state)
-    ├── ImageAnalyzer.kt              # Core class using ML Kit to detect text/barcodes
-    ├── ImageAnalyzerListener.kt      # Listener interface for analyzer callbacks
-    ├── LabelJSON.kt                  # Data class for storing label fields (Kotlinx Serialization)
-    ├── PersistentBottomSheet.kt      # Implementation for a Bottom Sheet Fragment
-    ├── data
-    │   └── FieldExtractor.kt         # Helper class for extracting fields from OCR text blocks
+└── algonquin.cst8319.enigmatic/
+    ├── MainActivity.kt                # Main UI and camera setup
+    ├── data/
+    │   ├── FieldExtractor.kt          # Extracts structured data from OCR text
+    │   ├── LabelJSON.kt               # Data model for label information
+    │   ├── MainActivityViewModel.kt   # ViewModel for UI state management
+    │   └── Validator.kt               # Validates extracted fields
+    ├── presentation/
+    │   └── PersistentBottomSheet.kt   # UI component for showing results
+    ├── processing/
+    │    ├── ImageAnalyzer.kt           # Processes camera frames for OCR & barcode
+    │    └── LabelDetectedCallback.kt   # Interface for label detection events
     ├── xml layouts, resources, etc.
     └── ...
 ```
@@ -83,26 +103,39 @@ This application aligns with the core requirements stated in the **Project Requi
 
 ---
 
-#### ImageAnalyzer
-- Manages the camera frames fed into ML Kit’s Text and Barcode Scanners.
-- Pauses scanning once a postal code is detected.
-- Uses `recognizer.process(...)` for OCR and `barcodeScanner.process(...)` for barcodes.
+#### `MainActivity`
+The entry point of the application, responsible for:
+- Camera setup and permissions handling
+- UI management and user interaction
+- Launching the document scanner when a label is detected
+- Displaying scan results
 
-#### FieldExtractor
-- Extracts text blocks from the recognized OCR result.
-- Identifies addresses, postal codes, and additional shipping label data.
+#### `ImageAnalyzer`
+Core processing class that:
+- Analyzes camera frames in real-time
+- Detects text using ML Kit's Text Recognition
+- Scans for barcodes using ML Kit's Barcode Scanner
+- Identifies when a shipping label is present (by detecting postal codes)
+- Coordinates the extraction and validation of label fields
 
-#### LabelJSON
-- A `@Serializable` Kotlin class that defines the structure of the JSON output.
+#### `FieldExtractor`
+Specialized class for extracting shipping label information:
+- Uses regex patterns to identify specific fields in OCR text
+- Sorts and processes text blocks based on their position
+- Extracts addresses, postal codes, tracking numbers, etc.
+- Handles the challenges of OCR errors and formatting variations
 
-#### MainActivity
-- Sets up the CameraX preview and binds an instance of `ImageAnalyzer`.
-- Listens for callbacks indicating text/barcode detection or final JSON generation.
-- Launches the GMS Document Scanner for enhanced image capture.
-- Displays output to the user in a bottom sheet.
+#### `LabelJSON`
+Data class that:
+- Stores all extracted shipping label fields
+- Provides getters and setters for each field
+- Serializes the data to a formatted JSON string
 
-#### MainActivityViewModel
-- Encapsulates UI state using `LiveData` (e.g., controlling the preview or results container visibility).
+#### `Validator`
+Ensures data quality by:
+- Checking for missing or invalid fields
+- Validating field length and format where possible
+- Providing error feedback (including audio alerts)
 
 ---
 
@@ -113,10 +146,10 @@ Below is a comprehensive list of the core technologies and libraries utilized by
 - **![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)**  
   Primary programming language for implementing the application logic, leveraging modern Kotlin features such as data classes, and extension functions.
 
-- **Gradle**  
+- **![Gradle](https://img.shields.io/badge/Gradle-02303A.svg?style=for-the-badge&logo=Gradle&logoColor=white)**  
   Build automation tool used to manage project configurations, dependencies, and tasks. The Gradle wrapper ensures consistent build environments across different systems.
 
-- **Android Studio**  
+- **![Android Studio](https://img.shields.io/badge/Android%20Studio-3DDC84.svg?style=for-the-badge&logo=android-studio&logoColor=white)** 
   Recommended integrated development environment (IDE) for Android app development, offering code editing, debugging, and built-in Gradle support.
 
 - **Android SDK / AndroidX Libraries**  
@@ -126,7 +159,7 @@ Below is a comprehensive list of the core technologies and libraries utilized by
   - **ConstraintLayout**: Flexible layout manager for UI design.  
   - **Material Components**: Implements Material Design widgets and behaviors (e.g., Bottom Sheets).
 
-- **Google ML Kit**  
+- **![Google ML Kit](https://img.shields.io/badge/Google%20ML%20Kit-4285F4?style=for-the-badge&logo=google&logoColor=white)** 
   - **ML Kit Text Recognition**: Automatically detects and extracts text from images.  
   - **ML Kit Barcode Scanning**: Identifies and reads barcodes (including partially damaged ones).  
   - **Play Services Document Scanner**: Enables higher-fidelity image capture flows via `GmsDocumentScanning`.
@@ -134,7 +167,7 @@ Below is a comprehensive list of the core technologies and libraries utilized by
 - **Kotlinx Serialization (Json)**  
   Used for converting recognized label data into structured JSON output. Annotated classes (e.g., `@Serializable`) allow easy parsing and generation of JSON strings.
 
-- **Material Design Components**  
+- **![Material Design](https://img.shields.io/badge/Material%20Design-757575?style=for-the-badge&logo=material-design&logoColor=white)**  
   Offers ready-made UI components (buttons, text fields, bottom sheets, etc.) and ensures a modern, consistent user experience aligned with Google’s Material Design guidelines.
 
 These technologies work together to deliver a user-friendly experience. All build dependencies are specified in the app’s `build.gradle` file, making it straightforward to manage and update the libraries as needed.
@@ -142,6 +175,14 @@ These technologies work together to deliver a user-friendly experience. All buil
 ---
 
 ## Installation & Setup
+
+### Prerequisites
+- Android Studio Hedgehog (2023.1.1) or newer
+- Kotlin 2.0.0 or newer
+- **![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)** device running Android 11 (API level 30) or higher
+- Camera permissions enabled on the test device
+
+### Steps
 
 1. **Clone the Repository**
    ```bash
@@ -167,27 +208,37 @@ These technologies work together to deliver a user-friendly experience. All buil
 
 ## Usage
 
-### Launch the App
-- Open **Label Xtract** on your Android device.  
-- The camera feed will be active, continuously scanning for shipping labels.  
-- Ensure the label is well lit and within view.
+1. **Launch the App**
+    - Open LabelXtract on your Android device
+    - The app will request camera permissions if not already granted
 
-### Label Detection
-- The OCR automatically searches for textual patterns (especially a Canadian postal code) to identify a shipping label.  
-- Once a label is detected, the scanning process pauses to avoid duplicates.
+2. **Scan a Label**
+    - Point your device's camera at a Canada Post shipping label
+    - Hold the device steady until the app detects a postal code
+    - Once detected, the document scanner will launch automatically
 
-### Scanning the Document
-- The app launches the **GmsDocumentScanning** flow for higher-fidelity images.  
-- A short pause or “debounce” is built in to allow text recognitions and barcode scanning process to complete.
+3. **Capture the Label**
+    - Follow the on-screen guides to position the label within the frame
+    - The document scanner will automatically capture the image when ready
+    - For manual capture, tap the shutter button
 
-### Viewing the Results
-- After detection, the recognized text blocks are processed into a `LabelJSON`.
-- A **bottom sheet** appears, displaying the JSON output (e.g., postal code, addresses, product details, barcodes, etc.).
-- **An image of the captured label** is also displayed on the screen above the bottom sheet for visual reference.
+4. **View Results**
+    - Confirm or retake the displayed captured image
+    - After processing, the app displays the extracted information
+    - A bottom sheet shows all detected fields in JSON format
+    - The scanned image appears above the JSON data for reference
 
-### Close or Proceed
-- If the user taps **Close**, the bottom sheet collapses, and the camera feed resumes.  
-- The user can then repeat the process for new packages.
+5. **Copy or Continue**
+    - Tap "Copy" to copy the JSON data to your clipboard
+    - Tap "Close" to dismiss the results and scan another label
+
+### Tips for Best Results
+
+- **Good Lighting:** Ensure the label is well-lit for accurate OCR
+- **Avoid Glare:** Minimize reflections on glossy label surfaces
+- **Flat Surface:** Try to keep the label flat to avoid distortion
+- **Complete View:** Make sure the entire label is visible in the frame
+- **Steady Hand:** Hold the device steady during scanning
 
 ---
 
@@ -210,14 +261,26 @@ Below is a sample JSON output captured by the application:
 }
 ```
 
+Each field represents specific information from the shipping label:
+- `productType`: The Canada Post service type (Priority, Xpresspost, etc.)
+- `toAddress`: The recipient's complete address
+- `destPostalCode`: The destination postal code
+- `trackPin`: The tracking number, typically 16 digits
+- `barCode`: The barcode value, if successfully scanned
+- `fromAddress`: The sender's complete address
+- `productDimension`: Package dimensions (LxWxH)
+- `productWeight`: Package weight with unit
+- `productInstruction`: Special handling instructions (SIGNATURE, DO NOT SAFE DROP, etc.)
+- `reference`: Reference number or customer ID
+
 ---
 
 ## Contribution Guidelines
 
-We welcome contributions to improve **Label Xtract**! Whether you find a bug, have an idea for a new feature, or want to enhance the existing code, here’s how you can get involved:
+We welcome contributions to improve **LabelXtract**! Whether you find a bug, have an idea for a new feature, or want to enhance the existing code, here’s how you can get involved:
 
 - **Reporting Issues or Suggestions**:  
-  If you encounter any problems using **Label Xtract** or have recommendations for enhancements, please open an issue on the project's issue tracker (GitHub Issues). Provide details about the problem or idea, including steps to reproduce bugs or reasoning behind feature requests. This helps maintainers and contributors understand and prioritize the work.
+  If you encounter any problems using **LabelXtract** or have recommendations for enhancements, please open an issue on the project's issue tracker (GitHub Issues). Provide details about the problem or idea, including steps to reproduce bugs or reasoning behind feature requests. This helps maintainers and contributors understand and prioritize the work.
 
 - **Contributing Code**:  
   We appreciate pull requests from the community. To contribute code or documentation:
@@ -246,7 +309,7 @@ By following these guidelines, you help us ensure that the project remains stabl
 
 ## Contributors
 
-The **Enigmatic OCR** project was developed by the following team members as part of a software development course project:
+The **LabelXtract** project was developed by the following team members as part of a software development course project:
 
 | **Name**       | **Role**            | **GitHub**                                             |
 |----------------|---------------------|-------------------------------------------------------|
@@ -260,7 +323,7 @@ The **Enigmatic OCR** project was developed by the following team members as par
 
 ## License
 
-This project is licensed under the [Apache License 2.0](LICENSE).  
+This project is licensed under the [MIT License](LICENSE).  
 For detailed terms and conditions, please see the `LICENSE` file in the root directory of this repository.
 
 
