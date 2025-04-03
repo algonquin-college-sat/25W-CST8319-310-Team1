@@ -26,17 +26,64 @@ import android.view.View
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
+/**
+ * ViewModel for managing UI state in MainActivity.
+ *
+ * This class:
+ * - Stores and manages UI-related data that survives configuration changes
+ * - Uses LiveData for observable data patterns to update the UI
+ * - Controls visibility states of different UI components
+ * - Manages the scanned image URI
+ *
+ * It follows the MVVM (Model-View-ViewModel) pattern to separate UI logic
+ * from the UI controller (MainActivity).
+ * @author Team ENIGMatic
+ */
 class MainActivityViewModel : ViewModel() {
+    /**
+     * LiveData holding the current text to display in the result view.
+     */
     val currentText: MutableLiveData<String> = MutableLiveData()
+
+    /**
+     * LiveData holding the header text for the bottom sheet.
+     */
     val headerText: MutableLiveData<String> = MutableLiveData()
+
+    /**
+     * LiveData controlling the visibility of the camera preview.
+     * Initially visible (View.VISIBLE).
+     */
     val previewViewVisibility: MutableLiveData<Int> = MutableLiveData(View.VISIBLE)
+
+    /**
+     * LiveData controlling the visibility of the result container.
+     * Initially gone (View.GONE).
+     */
     val resultContainerVisibility: MutableLiveData<Int> = MutableLiveData(View.GONE)
+
+    /**
+     * LiveData controlling the visibility of the image view.
+     * Initially gone (View.GONE).
+     */
     val imageViewVisibility: MutableLiveData<Int> = MutableLiveData(View.GONE)
+
+    /**
+     * LiveData holding the URI of the scanned image.
+     * Initially null.
+     */
     val scannedImage: MutableLiveData<Uri?> = MutableLiveData(null)
+
+    /**
+     * LiveData controlling the visibility of the progress bar.
+     * Initially visible (View.VISIBLE).
+     */
     val progressBarVisibility: MutableLiveData<Int> = MutableLiveData(View.VISIBLE)
 
-    /***
-     * Update image and visibility.
+    /**
+     * Updates the scanned image URI and adjusts visibility states accordingly.
+     *
+     * @param bitmap The URI of the captured label image
      */
     fun setScannedImage(bitmap: Uri) {
         scannedImage.value = bitmap

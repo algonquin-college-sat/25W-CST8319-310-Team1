@@ -27,6 +27,18 @@ import android.os.Bundle
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
+/**
+ * Fragment that provides a persistent bottom sheet UI for displaying label scanning results.
+ *
+ * This fragment creates a bottom sheet dialog that:
+ * - Displays the JSON output of the scanned label
+ * - Can be expanded or collapsed as needed
+ * - Provides a consistent user interface for viewing results
+ *
+ * The bottom sheet is configured in onCreateDialog and uses the bottom_sheet layout file.
+ *
+ * @author Team ENIGMatic
+ */
 class PersistentBottomSheet : BottomSheetDialogFragment() {
 
     override fun onCreateDialog(

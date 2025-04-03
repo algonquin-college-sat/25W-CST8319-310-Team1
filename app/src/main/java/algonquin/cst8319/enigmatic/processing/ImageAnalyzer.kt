@@ -37,35 +37,102 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.ExecutorService
 
-
+/**
+ * Processes camera frames to detect and analyze shipping labels.
+ *
+ * This class implements ImageAnalysis.Analyzer to receive camera frames
+ * and uses Google ML Kit to:
+ * - Detect text using OCR (Optical Character Recognition)
+ * - Recognize postal codes to identify shipping labels
+ * - Scan for barcodes
+ * - Extract structured data from the detected text
+ *
+ * When a shipping label is detected (identified by a postal code),
+ * the class notifies the activity via the LabelDetectedCallback.
+ *
+ * @param labelDetectedCallback Interface to notify when a label is detected
+ * @author Team ENIGMatic
+ */
 @ExperimentalGetImage class ImageAnalyzer(
+    /**
+     * Callback interface to notify MainActivity when a label is detected.
+     */
     private val labelDetectedCallback: LabelDetectedCallback,
 ) : ImageAnalysis.Analyzer {
 
-    // ML Kit's TextRecognizer instance, used for detecting text in images
+    /**
+     * ML Kit's TextRecognizer instance, used for detecting and extracting text from images.
+     * Configured with default options.
+     */
     private var recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-    // FieldExtractor instance - initialized in recognizeText method
+    /**
+     * Instance of FieldExtractor that processes recognized text blocks to extract
+     * structured data. Initialized in the processLabelText method.
+     */
     private lateinit var fieldExtractor: FieldExtractor
 
-    // Status flags
+    /**
+     * Status flag indicating whether text recognition processing is complete.
+     * Used to coordinate with other processing steps.
+     */
     private var isTextProcessingComplete = false
+
+    /**
+     * Status flag indicating whether barcode processing is complete.
+     * Used to coordinate with other processing steps.
+     */
     private var isBarcodeProcessingComplete = false
+
+    /**
+     * Status flag indicating whether barcode processing is currently in progress.
+     * Prevents multiple simultaneous barcode processing operations.
+     */
     private var isBarcodeProcessing = false
+
+    /**
+     * Status flag indicating whether the analyzer is paused.
+     * When true, camera frames will be ignored.
+     */
     private var isPaused = false
 
-    // Data structures to store extracted label fields
+    /**
+     * Stores the value of the barcode detected in the shipping label.
+     */
     private var barcodeValue = ""
+
+    /**
+     * Stores the list of extracted field strings from the OCR process.
+     */
     private var extractedFields = mutableListOf<String>()
+
+    /**
+     * Structured data model that holds all extracted shipping label information.
+     */
     private lateinit var labelJSON: LabelJSON
+
+    /**
+     * The final validated JSON output string ready for display to the user.
+     */
     private lateinit var finalValidatedOutput: String
 
-    // BarcodeScanner instance
+    /**
+     * Configuration options for the barcode scanner.
+     * Set to recognize all barcode formats for maximum compatibility.
+     */
     private val options = BarcodeScannerOptions.Builder()
         .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
         .build()
+
+    /**
+     * ML Kit's BarcodeScanner instance, used for detecting and reading barcodes in images.
+     */
     private val barcodeScanner = BarcodeScanning.getClient(options)
 
+    /**
+     * Gets the final validated output as a String.
+     * @return The validated and processed label data in JSON format.
+     */
     fun getFinalValidatedOutput() : String {return finalValidatedOutput}
 
     /**
@@ -103,6 +170,21 @@ import java.util.concurrent.ExecutorService
         imageProxy.close()
     }
 
+    /**
+     * Processes a document scanner image to extract label information.
+     *
+     * This method coordinates the full processing pipeline:
+     * 1. Text recognition using OCR
+     * 2. Barcode scanning
+     * 3. JSON creation from extracted fields
+     * 4. Validation of the final output
+     *
+     * It uses nested callbacks to ensure each step completes before
+     * the next begins, and finally calls onComplete when all processing is done.
+     *
+     * @param image The InputImage from the document scanner
+     * @param onComplete Callback to invoke when processing is complete
+     */
     fun analyzeDocScannerImage(image: InputImage, onComplete: () -> Unit) {
         processLabelText(image) {
             // Once text recognition is done, process barcode
@@ -228,6 +310,13 @@ import java.util.concurrent.ExecutorService
             }
     }
 
+    /**
+     * Checks if the provided visionText contains a Canadian postal code pattern.
+     * This is used to determine if a shipping label is present in the current image.
+     *
+     * @param visionText The text recognized by ML Kit's TextRecognizer
+     * @return True if a postal code pattern is found, false otherwise
+     */
     private fun detectPostalCode(visionText: Text): Boolean {
         val postalCodeRegex = Regex("""[a-zA-Z][O0-9][a-zA-Z][\\ \\-]{0,1}[O0-9][a-zA-Z][O0-9]""")
         // Iterate over all text blocks, lines, or elements
@@ -241,6 +330,12 @@ import java.util.concurrent.ExecutorService
         return false // No match found
     }
 
+    /**
+     * Creates a LabelJSON object from the extracted fields.
+     * This consolidates all the data extracted by the FieldExtractor and any barcode data.
+     *
+     * @param onComplete Callback invoked when JSON creation is complete
+     */
     private fun createLabelJSON(onComplete: () -> Unit) {
         labelJSON = LabelJSON(
             fieldExtractor.getProductType(),
@@ -257,6 +352,12 @@ import java.util.concurrent.ExecutorService
         onComplete()
     }
 
+    /**
+     * Validates the created LabelJSON object to ensure all required fields are present
+     * and properly formatted. Stores the final validated output for later retrieval.
+     *
+     * @param onComplete Callback invoked when validation is complete
+     */
     private fun validateJSON(onComplete: () -> Unit) {
         val validate = Validator()
         finalValidatedOutput = validate.validateAndConvert(labelJSON)
