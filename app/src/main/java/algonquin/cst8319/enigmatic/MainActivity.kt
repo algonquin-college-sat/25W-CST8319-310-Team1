@@ -30,7 +30,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.opengl.Visibility
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
@@ -59,6 +58,21 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+/**
+ * Main entry point for the LabelXtract application.
+ *
+ * This activity is responsible for:
+ * - Setting up the camera preview using CameraX
+ * - Managing user permissions for camera access
+ * - Coordinating the label detection and scanning process
+ * - Displaying scanning results to the user via a bottom sheet
+ * - Providing clipboard functionality for the extracted JSON data
+ *
+ * The class implements LabelDetectedCallback to receive notifications
+ * when a shipping label is detected in the camera feed.
+ *
+ * @author Team ENIGMatic
+ */
 @ExperimentalGetImage class MainActivity : AppCompatActivity(), LabelDetectedCallback {
 
     private lateinit var cameraExecutor: ExecutorService
@@ -123,6 +137,19 @@ import java.util.concurrent.Executors
         }
     }
 
+    /**
+     * Initializes the activity, sets up the UI, and prepares the camera.
+     *
+     * This method:
+     * 1. Inflates the layout
+     * 2. Sets up the bottom sheet behavior and UI elements
+     * 3. Configures click listeners for buttons
+     * 4. Sets up LiveData observers for the ViewModel
+     * 5. Initializes the camera executor and checks permissions
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being
+     *        shut down, this contains the data it most recently supplied in onSaveInstanceState.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -217,11 +244,19 @@ import java.util.concurrent.Executors
         startCamera()
     }
 
+    /**
+     * Cleans up resources when the activity is destroyed.
+     * Specifically, shuts down the camera executor to release resources.
+     */
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
     }
 
+    /**
+     * Checks if the app has camera permission and requests it if needed.
+     * Camera permission is essential for the app's core functionality.
+     */
     private fun checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -236,6 +271,16 @@ import java.util.concurrent.Executors
         }
     }
 
+    /**
+     * Initializes and starts the camera preview.
+     *
+     * This method:
+     * 1. Gets a ProcessCameraProvider instance
+     * 2. Creates a Preview use case for the viewfinder
+     * 3. Creates and configures an ImageAnalyzer for processing frames
+     * 4. Binds all use cases to the device's back camera
+     * 5. Handles any exceptions that may occur during setup
+     */
     private fun startCamera() {
         val processCameraProvider = ProcessCameraProvider.getInstance(this)
 
@@ -269,14 +314,22 @@ import java.util.concurrent.Executors
         }, ContextCompat.getMainExecutor(this))
     }
 
+    /**
+     * Resumes the camera preview after document scanning is complete.
+     * Resets the scanning flag and restarts the camera.
+     */
     private fun resumeCameraX() {
         isScanningInProgress = false
         startCamera()
     }
 
     /**
-     * This gets called by the ImageAnalyzer when it detects a label.
-     * We can pause/unbind, then launch the Document Scanner flow.
+     * Callback method triggered when a shipping label is detected in the camera feed.
+     *
+     * This method:
+     * 1. Checks if scanning is already in progress to prevent duplicate launches
+     * 2. Unbinds the camera provider to pause camera preview
+     * 3. Launches the document scanner for high-quality image capture
      */
     override fun onLabelDetected() {
         // trying to prevent duplicate launches ¯\_(ツ)_/¯
@@ -295,6 +348,13 @@ import java.util.concurrent.Executors
         startDocumentScanner()
     }
 
+    /**
+     * Launches Google's document scanner interface to capture a high-quality
+     * image of the detected shipping label.
+     *
+     * The scanner provides edge detection, perspective correction, and
+     * enhanced image quality for better OCR results.
+     */
     private fun startDocumentScanner() {
         docScannerClient.getStartScanIntent(this)
             .addOnSuccessListener { intentSender ->
@@ -305,6 +365,17 @@ import java.util.concurrent.Executors
             }
     }
 
+    /**
+     * Displays the results of a successful label scan.
+     *
+     * This method:
+     * 1. Updates the UI to show the scanned image
+     * 2. Expands the bottom sheet to display the JSON results
+     * 3. Updates the ViewModel with the new data
+     * 4. Passes the processed label data to outputProcessedLabelData
+     *
+     * @param image URI of the captured label image
+     */
     private fun displayResults(image: Uri) {
         isScanningInProgress = false
 
@@ -332,6 +403,17 @@ import java.util.concurrent.Executors
         }
     }
 
+    /**
+     * Updates the UI with the processed and validated label data.
+     *
+     * This method:
+     * 1. Updates the bottom sheet header text
+     * 2. Displays the processed label data in the text view
+     * 3. Expands the bottom sheet to show results
+     * 4. Updates the ViewModel with the current UI state
+     *
+     * @param processedLabelData The validated JSON string to display
+     */
     private fun outputProcessedLabelData(processedLabelData: String) {
         runOnUiThread {
             bottomSheetHeader.text = getString(R.string.label_information)

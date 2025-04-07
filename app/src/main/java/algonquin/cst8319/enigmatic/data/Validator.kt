@@ -24,13 +24,25 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 
 /**
- * used to validate and convert label data before processing.
- * It checks for missing or invalid fields such as toAddress, fromAddress, and barCode.
- * If validation fails, it triggers an error beep and returns an error message.
+ * Validates the extracted label data before presenting it to the user.
+ *
+ * This class:
+ * - Checks for missing or invalid fields in the LabelJSON object
+ * - Ensures critical fields meet minimum length requirements
+ * - Provides error feedback including audio alerts when validation fails
+ * - Formats the data as JSON when validation succeeds
+ *
+ * Validation helps ensure data quality and completeness before the information
+ * is presented to the user or potentially sent to other systems.
+ * @author Team ENIGMatic
  */
 class Validator {
 
+    /**
+     * Flag indicating whether any field validation has failed.
+     */
     private var hasInvalidField: Boolean = false
+
     /**
      * Validates the fields of a [LabelJSON] object.
      *

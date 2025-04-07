@@ -21,7 +21,16 @@
 
 package algonquin.cst8319.enigmatic.processing
 
-// Interface for DocScanner Activity
+/**
+ * Interface for notifying when a shipping label is detected in the camera feed.
+ *
+ * This callback interface is implemented by MainActivity to receive
+ * notifications from the ImageAnalyzer when a shipping label (identified
+ * by a Canadian postal code) is detected in the camera preview.
+ *
+ * Upon notification, the implementing class typically pauses the regular
+ * camera preview and launches the document scanner for a higher-quality capture.
+ */
 interface LabelDetectedCallback {
     fun onLabelDetected()
 }

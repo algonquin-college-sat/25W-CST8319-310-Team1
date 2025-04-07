@@ -32,7 +32,7 @@ import com.google.mlkit.vision.text.Text.TextBlock
  *
  * @param scannedTextBlocks A list of TextBlock objects representing the scanned text.
  * @constructor Creates a field extractor with a new list of text blocks.
- * @author Ian Phillips
+ * @author Team ENIGMatic
  */
 class FieldExtractor(
     private var scannedTextBlocks: List<TextBlock>
