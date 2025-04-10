@@ -3,7 +3,11 @@
 **Team ENIGMatic**  
 *(Algonquin College – CST8319 Software Development Project)*
 
-  ![LabelXtract Logo](https://github.com/algonquin-college-sat/25W-CST8319-310-Team1/blob/251c62a3a46c071ff287be37782550395919a632/app/src/main/ic_launcher-playstore.png)
+  ![LabelXtract Logo](app/src/main/ic_launcher-playstore.png)
+
+## Demo
+
+![LabelXtract Demo](app/src/main/Demo.gif)
 
 ---
 
