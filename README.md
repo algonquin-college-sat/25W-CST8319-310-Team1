@@ -186,7 +186,7 @@ These technologies work together to deliver a user-friendly experience. All buil
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/algonquin-college-sat/25W-CST8319-310-Team1.git
+   git clone https://github.com/LabelXtract/labelxtract.git
 
 2. **Open in Android Studio**
    - Open **Android Studio**.
